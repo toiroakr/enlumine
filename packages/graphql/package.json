@@ -1,6 +1,6 @@
 {
   "name": "@enlumine/graphql",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "graphql syntax tokenizer",
   "type": "module",
   "exports": {
