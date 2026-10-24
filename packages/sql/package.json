@@ -1,0 +1,36 @@
+{
+  "name": "@enlumine/sql",
+  "version": "0.0.0",
+  "description": "sql syntax tokenizer",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./editor": {
+      "types": "./dist/editor.d.ts",
+      "import": "./dist/editor.js"
+    },
+    "./themes/ansi": {
+      "types": "./dist/themes/ansi.d.ts",
+      "import": "./dist/themes/ansi.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "THIRD_PARTY_NOTICES.txt"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toiroakr/enlumine.git",
+    "directory": "packages/sql"
+  },
+  "dependencies": {
+    "@enlumine/core": "workspace:*"
+  }
+}

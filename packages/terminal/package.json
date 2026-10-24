@@ -1,0 +1,40 @@
+{
+  "name": "@enlumine/terminal",
+  "version": "0.0.0",
+  "description": "ANSI rendering for syntax tokens",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./themes/dark": {
+      "types": "./dist/themes/dark.d.ts",
+      "import": "./dist/themes/dark.js"
+    },
+    "./themes/light": {
+      "types": "./dist/themes/light.d.ts",
+      "import": "./dist/themes/light.js"
+    },
+    "./themes/ansi": {
+      "types": "./dist/themes/ansi.d.ts",
+      "import": "./dist/themes/ansi.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "THIRD_PARTY_NOTICES.txt"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toiroakr/enlumine.git",
+    "directory": "packages/terminal"
+  },
+  "dependencies": {
+    "@enlumine/core": "workspace:*"
+  }
+}

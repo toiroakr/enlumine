@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.tgz
+.generated/
+
+/benchmark/
+/third-party/*
+!/third-party/editor-LICENSE.txt
+.DS_Store

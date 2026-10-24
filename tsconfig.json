@@ -1,0 +1,55 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "ES2024.String"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "declaration": true,
+    "outDir": ".generated/types",
+    "rootDir": "packages",
+    "skipLibCheck": true,
+    "verbatimModuleSyntax": true,
+    "paths": {
+      "@enlumine/terminal/themes/*": [
+        "./packages/terminal/src/themes/*.ts"
+      ],
+      "@enlumine/graphql/lexical": [
+        "./packages/graphql/src/lexical.ts"
+      ],
+      "@enlumine/core": [
+        "./packages/core/src/index.ts"
+      ],
+      "@enlumine/json": [
+        "./packages/json/src/index.ts"
+      ],
+      "@enlumine/typescript": [
+        "./packages/typescript/src/index.ts"
+      ],
+      "@enlumine/sql": [
+        "./packages/sql/src/index.ts"
+      ],
+      "@enlumine/graphql": [
+        "./packages/graphql/src/index.ts"
+      ],
+      "@enlumine/terminal": [
+        "./packages/terminal/src/index.ts"
+      ],
+      "@enlumine/sql/editor": [
+        "./packages/sql/src/editor.ts"
+      ],
+      "@enlumine/graphql/editor": [
+        "./packages/graphql/src/editor.ts"
+      ],
+      "@enlumine/sql/themes/ansi": [
+        "./packages/sql/src/themes/ansi.ts"
+      ],
+      "@enlumine/graphql/themes/ansi": [
+        "./packages/graphql/src/themes/ansi.ts"
+      ]
+    }
+  },
+  "include": [
+    "packages/*/src/**/*.ts"
+  ]
+}

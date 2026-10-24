@@ -1,0 +1,36 @@
+{
+  "name": "enlumine",
+  "version": "0.0.0",
+  "description": "A syntax highlighter and CLI for terminals",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "THIRD_PARTY_NOTICES.txt"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toiroakr/enlumine.git",
+    "directory": "packages/enlumine"
+  },
+  "bin": {
+    "enlumine": "./dist/cli.js"
+  },
+  "dependencies": {
+    "@enlumine/json": "workspace:*",
+    "@enlumine/typescript": "workspace:*",
+    "@enlumine/sql": "workspace:*",
+    "@enlumine/graphql": "workspace:*",
+    "@enlumine/terminal": "workspace:*",
+    "@enlumine/core": "workspace:*"
+  }
+}

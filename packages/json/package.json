@@ -1,0 +1,28 @@
+{
+  "name": "@enlumine/json",
+  "version": "0.0.0",
+  "description": "json syntax tokenizer",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "THIRD_PARTY_NOTICES.txt"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toiroakr/enlumine.git",
+    "directory": "packages/json"
+  },
+  "dependencies": {
+    "@enlumine/core": "workspace:*"
+  }
+}
