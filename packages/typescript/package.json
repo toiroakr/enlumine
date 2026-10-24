@@ -12,7 +12,9 @@
   "types": "./dist/index.d.ts",
   "files": [
     "dist",
-    "THIRD_PARTY_NOTICES.txt"
+    "THIRD_PARTY_NOTICES.txt",
+    "README.md",
+    "LICENSE"
   ],
   "engines": {
     "node": ">=22"
@@ -24,5 +26,10 @@
   },
   "dependencies": {
     "@enlumine/core": "workspace:*"
-  }
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "license": "MIT"
 }

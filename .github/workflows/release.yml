@@ -1,0 +1,70 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Release
+    if: github.repository == 'toiroakr/enlumine' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: release
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
+    steps:
+      - name: Generate GitHub App token
+        if: vars.APP_CLIENT_ID != ''
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510
+        with:
+          client-id: ${{ vars.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+          permission-pull-requests: write
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Setup pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+        with:
+          standalone: true
+          run_install: false
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Setup npm for trusted publishing
+        run: npm install --global npm@11.21.1
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build and test
+        run: pnpm test
+      - name: Check types
+        run: pnpm check
+      - name: Verify package consumers
+        run: node scripts/smoke-packages.mjs
+      - name: Create release PR or publish
+        uses: changesets/action@ae32849d5ba541f9ae29e40e22a623bc13562f51
+        with:
+          version-script: pnpm version-packages
+          publish-script: pnpm release
+          pr-title: 'chore: release'
+          commit-message: 'chore: release'
+          create-github-releases: true
+          github-token: ${{ steps.app-token.outputs.token || github.token }}
+        env:
+          NPM_CONFIG_PROVENANCE: ${{ !github.event.repository.private }}

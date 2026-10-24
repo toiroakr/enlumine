@@ -11,7 +11,12 @@
     "test:compatibility": "pnpm build && node --test test/compatibility.test.mjs test/json.test.mjs test/sql.test.mjs test/graphql-lexical.test.mjs",
     "smoke:packages": "pnpm build && node scripts/smoke-packages.mjs",
     "size": "pnpm build && node scripts/size.mjs",
-    "size:check": "pnpm build && node scripts/check-bundle-sizes.mjs"
+    "size:check": "pnpm build && node scripts/check-bundle-sizes.mjs",
+    "changeset": "changeset",
+    "version-packages": "changeset version && pnpm install --lockfile-only --ignore-scripts",
+    "release": "pnpm build && changeset publish",
+    "bootstrap:publish": "pnpm build && node scripts/bootstrap-publish.mjs",
+    "trust:configure": "node scripts/configure-trusted-publishing.mjs"
   },
   "repository": {
     "type": "git",
@@ -27,8 +32,10 @@
     "esbuild": "0.28.2",
     "graphql": "17.0.2",
     "terser": "5.51.2",
-    "typescript": "^5.9.0"
+    "typescript": "^5.9.0",
+    "@changesets/cli": "3.0.3"
   },
   "private": true,
-  "packageManager": "pnpm@12.14.0"
+  "packageManager": "pnpm@12.14.0",
+  "license": "MIT"
 }

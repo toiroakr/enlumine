@@ -28,7 +28,7 @@ The workspace contains seven packages. Package names describe the distribution l
 | `@enlumine/terminal` | ANSI rendering and separate theme modules | core |
 | `enlumine` | Convenience API and CLI with all four languages | core, terminal, language packages |
 
-Each package has its own manifest, exports, declarations, and tarball. The repository root is private and is not published as a package.
+Each package has its own manifest, exports, declarations, and tarball. The workspace root has `private: true` and is not an npm package.
 
 ## Highlight code
 
@@ -156,3 +156,11 @@ Third-party copyright and permission notices are retained in `THIRD_PARTY_NOTICE
 
 - [twinkleplop](https://github.com/pngwn/twinkleplop): language definitions and reclassification helpers.
 - [Highlights architecture](https://github.com/pierrecomputer/pierre/blob/main/packages/highlights/ARCHITECTURE.md): compact lexical execution and separation of tokens from output.
+
+## Releases
+
+[The release guide](docs/releasing.md) covers initial npm registration, per-package Trusted Publisher setup, and subsequent Changesets releases. GitHub Actions builds and verifies packages before publishing them with short-lived OIDC credentials.
+
+## License
+
+[MIT](LICENSE). Third-party notices and permission terms are retained in `THIRD_PARTY_NOTICES.txt`.

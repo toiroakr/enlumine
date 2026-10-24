@@ -546,3 +546,6 @@ await writeFile(
 for (const name of packages)
   await copyFile(resolve(root, "THIRD_PARTY_NOTICES.txt"),
     resolve(outputRoot, "packages", name, "THIRD_PARTY_NOTICES.txt"));
+
+for (const name of packages)
+  await copyFile(resolve(root, "LICENSE"), resolve(outputRoot, "packages", name, "LICENSE"));

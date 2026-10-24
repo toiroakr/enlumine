@@ -7,3 +7,7 @@ dist/
 /third-party/*
 !/third-party/editor-LICENSE.txt
 .DS_Store
+
+/_build/
+
+/packages/*/LICENSE

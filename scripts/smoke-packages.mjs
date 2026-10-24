@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, writeFile, mkdir, rm } from "node:fs/promises";
+import { mkdtemp, readFile, writeFile, mkdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -14,14 +14,18 @@ function run(command, args, cwd, input) {
   assert.equal(result.status, 0, result.stderr || result.stdout);
   return result.stdout;
 }
+const manifests = new Map(await Promise.all(packages.map(async name => [name,
+  JSON.parse(await readFile(resolve(root, "packages", name, "package.json"), "utf8")),
+])));
+const versions = new Map([...manifests.values()].map(manifest => [manifest.name, manifest.version]));
 const archives = new Map();
 for (const name of packages) {
   run("pnpm", ["pack", "--pack-destination", destination], resolve(root, "packages", name));
-  const archive = resolve(destination, `${name === "enlumine" ? name : `enlumine-${name}`}-0.0.0.tgz`);
+  const archive = resolve(destination, `${name === "enlumine" ? name : `enlumine-${name}`}-${manifests.get(name).version}.tgz`);
   const manifest = JSON.parse(run("tar", ["-xOf", archive, "package/package.json"], root));
   for (const [dependency, version] of Object.entries(manifest.dependencies ?? {})) {
     assert.ok(dependency.startsWith("@enlumine/"));
-    assert.equal(version, "0.0.0");
+    assert.equal(version, versions.get(dependency));
   }
   archives.set(name, archive);
 }
