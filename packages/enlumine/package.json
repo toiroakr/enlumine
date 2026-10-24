@@ -1,6 +1,6 @@
 {
   "name": "enlumine",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "A syntax highlighter and CLI for terminals",
   "type": "module",
   "exports": {
