@@ -27,8 +27,16 @@ const bindsArrowWithSoftParameter = (source, start, end) => new RegExp(`^\\s*=\\
 const afterJump = (source, start) => /\b(?:break|continue)[ \t]+$/.test(context(source, start));
 const labelDefinition = (source, start, end) => /^(?:\s|\/\*[^]*?\*\/|\/\/[^\n]*\n)*:/.test(source.slice(end, end + 200)) && /(?:^|[;{}])\s*$/.test(context(source, start));
 
+const skipped = "(?:\\s|\\/\\*[^]*?\\*\\/|\\/\\/[^\\n]*\\n)*";
+const followsName = new RegExp(`^${skipped}(?:=>|[:,;)=?\\]}]|\\.\\.\\.|$)`);
+const beforeName = new RegExp(`(?:[(,{[:]|\\.\\.\\.|\\b(?:${["public", "private", "protected", "readonly", "override", "async", "static", "accessor", "declare", "abstract", "get", "set"].join("|")}))\\s*$`);
+const parameterPosition = (source, start, end) => {
+  const after = source.slice(end, end + 200);
+  return /^\s*=>/.test(after) || followsName.test(after) && beforeName.test(context(source, start));
+};
+
 const improvements = [
-  { from: "identifier", to: "parameter" },
+  { from: "identifier", to: "parameter", when: parameterPosition },
   { from: "type", to: "parameter", when: inParameterList },
   { from: "function", to: "type", when: afterTypeKeyword },
   { from: "function", to: "identifier", when: afterTypeKeyword },

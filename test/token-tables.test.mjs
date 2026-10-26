@@ -9,13 +9,18 @@ test("identical tables are the same", () => {
   assert.ok(sameTables(table(types, [0, 0, 1]), table(types, [0, 0, 1])));
 });
 
-test("a token the reference calls an identifier may be a parameter", () => {
-  assert.ok(sameTables(table(types, [1, 0, 1]), table(types, [0, 0, 1])));
+test("a token the reference calls an identifier may be a parameter inside a parameter list", () => {
+  assert.ok(sameTables(table(types, [1, 2, 3]), table(types, [0, 2, 3]), "f(a)"));
+  assert.ok(sameTables(table(types, [1, 0, 1]), table(types, [0, 0, 1]), "a => a"));
+});
+
+test("an identifier operand of an expression is not allowed to become a parameter", () => {
+  assert.ok(!sameTables(table(types, [1, 8, 9]), table(types, [0, 8, 9]), "x = a + b;"));
 });
 
 test("any other change of kind is a difference", () => {
   assert.ok(!sameTables(table(types, [2, 0, 1]), table(types, [0, 0, 1])));
-  assert.ok(!sameTables(table(types, [0, 0, 1]), table(types, [1, 0, 1])));
+  assert.ok(!sameTables(table(types, [0, 2, 3]), table(types, [1, 2, 3]), "f(a)"));
 });
 
 test("a change of range or of the type list is a difference", () => {
