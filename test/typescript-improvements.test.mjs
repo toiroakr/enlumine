@@ -296,3 +296,8 @@ test("an upper-case enum name is a class name and its members are constants", ()
   assert.equal(kindOf(source, "STATUS"), "class_name");
   assert.equal(kindOf(source, "Ready"), "constant");
 });
+
+labelCases("labels inside catch, static and namespace bodies are labels", [
+  ["try {} catch { a: for (;;) { break a; } }", ["a", "a"]],
+  ["namespace N { a: for (;;) { break a; } }", ["a", "a"]],
+]);
