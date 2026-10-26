@@ -30,12 +30,15 @@ export const declarations = claim((source, tokens, types, out, framesInput) => {
     const before = view.prev(head - 1);
     return view.is(head, "namespace") && before >= 0 && (view.has(before, "keyword", "namespace") || view.has(before, "keyword", "module"));
   };
-  for (const i of view.of("identifier")) {
+  const labeled = new Set<number>();
+  const names = [...view.of("identifier"), ...view.of("constant")].sort((a, b) => a - b);
+  for (const i of names) {
     const next = view.next(i + 1), before = view.prev(i - 1);
     if (view.hasAny(before, "keyword", "break", "continue")) {
       if (sameLine(before, i)) out.emit(i, label(), 50);
     } else if (starts(next, ":") && frames) {
-      if (frames.at_start[i] === 1 && source[tokens[3 * i + 1] - 1] !== "#" && blockBody(i) && (before < 0 || view.is(before, "punctuation") && ";{}".includes(source[tokens[3 * before + 2] - 1]))) out.emit(i, label(), 50);
+      if (starts(before, ":") && labeled.has(view.prev(before - 1)) && source[tokens[3 * i + 1] - 1] !== "#") out.emit(i, label(), 50), labeled.add(i);
+      else if (frames.at_start[i] === 1 && source[tokens[3 * i + 1] - 1] !== "#" && blockBody(i) && (before < 0 || view.is(before, "punctuation") && ";{}".includes(source[tokens[3 * before + 2] - 1]))) out.emit(i, label(), 50), labeled.add(i);
       else if (starts(before, "[") && view.text(before).endsWith("[") && memberStart(before) && (memberKinds >> frames.frames[frames.frames[frames.active_frame[i]].parent].kind & 1) === 1) out.emit(i, parameter, 50);
     }
   }

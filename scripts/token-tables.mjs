@@ -55,7 +55,7 @@ const bindsArrowWithSoftParameter = (source, start, end) => new RegExp(`^\\s*=\\
 const afterJump = (source, start) => /\b(?:break|continue)[ \t]+$/.test(context(source, start));
 const blockHead = /(?:[)};]|\b(?:else|try|finally|do)|=>)\s*$/;
 const labelDefinition = (source, start, end) => {
-  if (!/^(?:\s|\/\*[^]*?\*\/|\/\/[^\n]*\n)*:/.test(source.slice(end, end + 200)) || !/(?:^|[;{}])\s*$/.test(context(source, start))) return false;
+  if (!/^(?:\s|\/\*[^]*?\*\/|\/\/[^\n]*\n)*:/.test(source.slice(end, end + 200)) || !/(?:^|[;{}])\s*(?:[\w$]+\s*:\s*)*$/.test(context(source, start))) return false;
   const info = brackets(source), open = info.inner[start];
   return open < 0 || info.text[open] === "{" && (headOf(info, open).trim() === "" || blockHead.test(headOf(info, open)));
 };
@@ -104,7 +104,7 @@ const improvements = [
   ...["identifier", "constant"].map(from => ({ from, to: "class_name", when: afterEnumKeyword })),
   { from: "identifier", to: "constant", when: enumMember },
   { from: "constant", to: "function", when: bindsArrowWithSoftParameter },
-  ...["identifier", "type"].map(from => ({ from, to: "label", when: (source, start, end) => afterJump(source, start) || labelDefinition(source, start, end) })),
+  ...["identifier", "type", "constant"].map(from => ({ from, to: "label", when: (source, start, end) => afterJump(source, start) || labelDefinition(source, start, end) })),
 ];
 
 export function differences(actual, expected, source) {

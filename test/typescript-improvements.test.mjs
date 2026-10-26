@@ -300,4 +300,15 @@ test("an upper-case enum name is a class name and its members are constants", ()
 labelCases("labels inside catch, static and namespace bodies are labels", [
   ["try {} catch { a: for (;;) { break a; } }", ["a", "a"]],
   ["namespace N { a: for (;;) { break a; } }", ["a", "a"]],
+  ["class C { static { a: for (;;) { break a; } } }", ["a", "a"]],
+]);
+
+labelCases("upper-case labels and labels that follow another label are labels", [
+  ["OUTER: while (x) { break OUTER; }", ["OUTER", "OUTER"]],
+  ["outer: inner: for (;;) { break inner; }", ["outer", "inner", "inner"]],
+]);
+
+cases("a computed key of a destructured parameter is not a parameter", [
+  ["function f({ [key]: value }) {}", ["value"]],
+  ["function f({ a: [x, y] }) {}", ["x", "y"]],
 ]);
