@@ -89,3 +89,10 @@ test("a contextual keyword is allowed to become a name only where it is used as 
   assert.ok(!moves(names, "keyword", "identifier", "type Foo = string;", "type"));
   assert.ok(!moves(names, "keyword", "identifier", "import x from 'm';", "from"));
 });
+
+test("an object literal key is not allowed to become a label, a statement in a block is", () => {
+  const names = ["identifier", "label"];
+  assert.ok(moves(names, "identifier", "label", "function f() {\n  foo: for (;;) {}\n}", "foo"));
+  assert.ok(!moves(names, "identifier", "label", "x = { foo: 1 };", "foo"));
+  assert.ok(!moves(names, "identifier", "label", "f({ foo: 1 });", "foo"));
+});

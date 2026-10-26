@@ -103,19 +103,19 @@ export function trackFrames(spec: Spec) {
     if (!table) cache.set(input.token_types, table = tables(spec, input.token_types));
     const { punct, comment, keyword, operator, words, ruleLists, transparent } = table;
     const tokens = input.tokens, count = tokens.length / 3;
-    const active = new Uint32Array(count), atStart = new Uint8Array(count), signals = new Uint8Array(count), asi = new Uint8Array(count);
+    const active = new Uint32Array(count), atStart = new Uint8Array(count), signals = new Uint8Array(count), asi = new Uint8Array(count), closedAngle = new Uint8Array(count);
     const frames = [{ bracket: -1, kind: 0, enter_idx: -1, parent: -1 }];
     const stack: number[][] = [], counts = [0, 0, 0];
     let current = 0, start = 1, ternary = 0, statement = 0, afterQmark = false, angles = 0, marker = -1, markerAt = "", last = -1;
     const where = () => counts + "," + angles;
     const lineBreak = (at: number, to: number) => {
-      for (let q = tokens[3 * at + 2]; q < to; q++) if (source.charCodeAt(q) === 10) return true;
+      for (let q = tokens[3 * at + 2]; q < to; q++) { const c = source.charCodeAt(q); if (c === 10 || c === 13 || c === 0x2028 || c === 0x2029) return true; }
       return false;
     };
     const completes = (at: number) => {
       const kind = tokens[3 * at], end = tokens[3 * at + 2];
       if (kind === punct) { const c = source.charCodeAt(end - 1); return c === 41 || c === 93 || c === 125; }
-      return kind === operator ? /^>+$/.test(source.slice(tokens[3 * at + 1], end)) : kind !== keyword || typeEnd.has(source.slice(tokens[3 * at + 1], end));
+      return kind === operator ? closedAngle[at] === 1 : kind !== keyword || typeEnd.has(source.slice(tokens[3 * at + 1], end));
     };
     const named = (at: number) => {
       let next = at + 1;
@@ -193,6 +193,7 @@ export function trackFrames(spec: Spec) {
       atStart[t] = start;
       if (word) {
         if (word.marker !== undefined) { marker = word.marker; markerAt = where(); }
+        if (word.delta! < 0 && angles > 0) closedAngle[t] = 1;
         angles = Math.max(0, angles + (word.delta ?? 0));
         if (word.qmark && !(optional && atStart[last] === 1 && optional.includes(frames[current].kind))) { ternary++; qmark = true; }
         if (word.stmt) statement = (statement | word.stmt.arm_mask) & ~word.stmt.clear_mask;

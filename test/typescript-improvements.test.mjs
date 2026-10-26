@@ -254,6 +254,8 @@ labelCases("object keys, ternary branches, case clauses and declarations are not
   ["switch (x) { case A: break; default: f(); }", []],
   ["let a = 1, b: number = 2;", []],
   ["class A { m: number; }", []],
+  ["const {\n  key: renamed,\n} = source;", []],
+  ["const pinned = {\n  core: 1,\n};", []],
 ]);
 
 cases("the name in catch (e) is a parameter", [
@@ -269,3 +271,28 @@ cases("the key of an index signature is a parameter", [
   ["const o = { [k]: 1, [a ? b : c]: 2 };", []],
   ["class A { m = [a, b]; }", []],
 ]);
+
+test("a name after break or continue on the next line terminator is not a label", () => {
+  for (const terminator of ["\n", "\r", " ", " "]) assert.deepEqual(labels(`outer: while (x) { break${terminator}outer; }`), ["outer"]);
+});
+
+test("names inside a default value of a destructured parameter are not parameters", () => {
+  assert.deepEqual(parameters("function f({ a = { b: c } }) {}"), ["a"]);
+  assert.deepEqual(parameters("function f({ a = [fallback], b }) {}"), ["a", "b"]);
+});
+
+test("a generic return type with commas does not hide the parameters of an arrow function", () => {
+  assert.deepEqual(parameters("const f = (a: X): Map<string, number> => a;"), ["a"]);
+  assert.deepEqual(parameters("const f = (a: X): Fn<() => void> => a;"), ["a"]);
+});
+
+test("members separated by any line terminator are properties, a relational greater-than is not a member boundary", () => {
+  for (const terminator of ["\n", "\r", " ", " "]) assert.deepEqual(named("property")(`interface I { a: number${terminator}b: string }`), ["a", "b"]);
+  assert.deepEqual(named("property")("class A { a = x >\n y }"), ["a"]);
+});
+
+test("an upper-case enum name is a class name and its members are constants", () => {
+  const source = "enum STATUS { Ready = 1 }";
+  assert.equal(kindOf(source, "STATUS"), "class_name");
+  assert.equal(kindOf(source, "Ready"), "constant");
+});

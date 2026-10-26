@@ -176,7 +176,7 @@ export const enums = claim((source, tokens, types, out) => {
   for (const i of view.of("keyword")) {
     if (!view.has(i, "keyword", "enum")) continue;
     const name = view.next(i + 1), open = view.next(name + 1);
-    if (!view.is(name, "identifier") || !view.starts(open, "punctuation", "{")) continue;
+    if (!(view.is(name, "identifier") || view.is(name, "constant")) || !view.starts(open, "punctuation", "{")) continue;
     const className = typeId(types, "class_name"), constant = typeId(types, "constant");
     out.emit(name, className, 50);
     let depth = 0, member = false;

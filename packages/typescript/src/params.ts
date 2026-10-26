@@ -36,15 +36,17 @@ export const parameters = claim((source, tokens, types, out, framesInput) => {
       && (view.is(after, "punctuation") && ",}]".includes(source[tokens[3 * after + 1]]) || view.has(after, "operator", "="));
   };
   const collect = (at: number, offset: number, strict: boolean) => {
-    let atStart = true, afterDefault = false, pattern = false;
+    let atStart = true, afterDefault = false, pattern = false, skip = 0;
     walk(at, offset, 1, (t, c, depth) => {
       if (c >= 0) {
         if (!depth) return true;
+        if (skip && (depth < skip || c === 44 && depth === skip)) skip = 0;
         if (c === 44 && depth === 1) atStart = true, afterDefault = false;
         else if (depth === 2 && atStart && !afterDefault && (c === 123 || c === 91)) pattern = true, atStart = false;
         else if (depth === 1) pattern = false;
       } else if (depth > 1 && pattern) {
-        if (tokens[3 * t] === identifier && binds(t)) found.push(t);
+        if (isOperator(t, "=") && !skip) skip = depth;
+        else if (!skip && tokens[3 * t] === identifier && binds(t)) found.push(t);
       } else if (depth === 1 && atStart && !afterDefault) {
         if (tokens[3 * t] === identifier) strict && (tokens[3 * view.next(t + 1)] === template || view.has(view.next(t + 1), "operator", "<")) || found.push(t), atStart = false;
         else if (isOperator(t, "=")) atStart = false, afterDefault = true;
@@ -65,8 +67,16 @@ export const parameters = claim((source, tokens, types, out, framesInput) => {
     const next = merged ? close[0] : view.next(close[0] + 1);
     if (next < 0) return false;
     if (merged || tokens[3 * next] === punctuation && tokens[3 * next + 2] - tokens[3 * next + 1] === 1 && source.charCodeAt(tokens[3 * next + 1]) === 58) {
-      let arrow = false;
-      walk(next, merged ? close[1] + 1 - tokens[3 * next + 1] : 0, 0, (t, c, depth) => c < 0 ? depth === 0 && isOperator(t, "=>") && (arrow = true) : depth < 0 || depth === 0 && (c === 44 || c === 59));
+      let arrow = false, angle = 0;
+      walk(next, merged ? close[1] + 1 - tokens[3 * next + 1] : 0, 0, (t, c, depth) => {
+        if (c >= 0) return depth < 0 || depth === 0 && (c === 44 && !angle || c === 59);
+        if (tokens[3 * t] === operator) {
+          const text = view.text(t);
+          if (text === "<") angle++;
+          else if (/^>+$/.test(text)) angle = Math.max(0, angle - text.length);
+        }
+        return depth === 0 && !angle && isOperator(t, "=>") && (arrow = true);
+      });
       return arrow;
     }
     return isOperator(next, "=>");

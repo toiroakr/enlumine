@@ -39,8 +39,12 @@ const unterminatedAngles = (source, start, end) => source.indexOf(">", end) === 
 const softKeywords = new Set("type from of as get set async static readonly declare abstract accessor override module namespace".split(" "));
 const softKeyword = (source, start, end) => softKeywords.has(source.slice(start, end)) && /^\s*(?:[)\]},;.:=(<>?!+\-*/%&|^~]|$)/.test(source.slice(end, end + 80));
 
-const angleAfterSoftKeyword = (source, start, end) =>
-  /^[<>]+$/.test(source.slice(start, end)) && new RegExp(`\\b(?:${[...softKeywords].join("|")})\\s*<`).test(source.slice(source.lastIndexOf("\n", start - 1) + 1, end));
+const angleAfterSoftKeyword = (source, start, end) => {
+  const text = source.slice(start, end), line = source.slice(source.lastIndexOf("\n", start - 1) + 1, start);
+  const names = [...softKeywords].join("|");
+  if (text === "<") return new RegExp(`\\b(?:${names})\\s*$`).test(line);
+  return /^>+$/.test(text) && new RegExp(`\\b(?:${names})\\s*<[^;(){}]*$`).test(line);
+};
 
 const typeParameterOfSoftKeyword = (source, start) => new RegExp(`\\b(?:${[...softKeywords].join("|")})\\s*<[^>]*$`).test(source.slice(source.lastIndexOf("\n", start - 1) + 1, start));
 
@@ -49,7 +53,12 @@ const afterSoftBinding = (source, start) => new RegExp(`(?:const|let|var)\\s+(?:
 const bindsArrowWithSoftParameter = (source, start, end) => new RegExp(`^\\s*=\\s*(?:async\\s+)?\\(?[^()=]*\\b(?:${softAlternation})\\b[^()=]*\\)?\\s*=>`).test(source.slice(end, end + 200));
 
 const afterJump = (source, start) => /\b(?:break|continue)[ \t]+$/.test(context(source, start));
-const labelDefinition = (source, start, end) => /^(?:\s|\/\*[^]*?\*\/|\/\/[^\n]*\n)*:/.test(source.slice(end, end + 200)) && /(?:^|[;{}])\s*$/.test(context(source, start));
+const blockHead = /(?:[)};]|\b(?:else|try|finally|do)|=>)\s*$/;
+const labelDefinition = (source, start, end) => {
+  if (!/^(?:\s|\/\*[^]*?\*\/|\/\/[^\n]*\n)*:/.test(source.slice(end, end + 200)) || !/(?:^|[;{}])\s*$/.test(context(source, start))) return false;
+  const info = brackets(source), open = info.inner[start];
+  return open < 0 || info.text[open] === "{" && (headOf(info, open).trim() === "" || blockHead.test(headOf(info, open)));
+};
 
 const skipped = "(?:\\s|\\/\\*[^]*?\\*\\/|\\/\\/[^\\n]*\\n)*";
 const followsName = new RegExp(`^${skipped}(?:=>|[:,;)=?\\]}]|\\.\\.\\.|$)`);
@@ -92,7 +101,7 @@ const improvements = [
   { from: "identifier", to: "type", when: typeParameterOfSoftKeyword },
   { from: "type", to: "identifier", when: afterSoftBinding },
   { from: "type", to: "identifier", when: afterTypeof },
-  { from: "identifier", to: "class_name", when: afterEnumKeyword },
+  ...["identifier", "constant"].map(from => ({ from, to: "class_name", when: afterEnumKeyword })),
   { from: "identifier", to: "constant", when: enumMember },
   { from: "constant", to: "function", when: bindsArrowWithSoftParameter },
   ...["identifier", "type"].map(from => ({ from, to: "label", when: (source, start, end) => afterJump(source, start) || labelDefinition(source, start, end) })),

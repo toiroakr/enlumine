@@ -133,6 +133,7 @@ export function combineGrammars(source, onOptimization) {
       [constants.BROTLI_PARAM_LGWIN]:compression.window,
     }});
     tuned=tuneGrammar(compact,baseline);
+    compression=tuned.parameters??compression;
     revive=revivePatterns;
   }
   const encoded = tuned.buffer.toString("base64");
