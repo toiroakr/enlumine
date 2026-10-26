@@ -1,5 +1,16 @@
 # enlumine
 
+## 0.1.1
+
+### Patch Changes
+
+- Updated dependencies [c7de3c0]
+- Updated dependencies [c7de3c0]
+- Updated dependencies [c7de3c0]
+- Updated dependencies [c7de3c0]
+  - @enlumine/typescript@0.2.0
+  - @enlumine/terminal@0.1.1
+
 ## 0.1.0
 
 ### Minor Changes

@@ -1,5 +1,11 @@
 # @enlumine/terminal
 
+## 0.1.1
+
+### Patch Changes
+
+- c7de3c0: Color the `label` token kind in the `dark` and `light` themes.
+
 ## 0.1.0
 
 ### Minor Changes
