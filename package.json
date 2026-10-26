@@ -24,7 +24,10 @@
   },
   "devDependencies": {
     "@twinkleplop/core": "0.3.1",
+    "@twinkleplop/css": "0.1.7",
     "@twinkleplop/graphql": "0.2.1",
+    "@twinkleplop/html": "0.1.7",
+    "@twinkleplop/javascript": "0.1.7",
     "@twinkleplop/json": "0.1.7",
     "@twinkleplop/sql": "0.1.7",
     "@twinkleplop/typescript": "0.1.7",

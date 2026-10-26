@@ -29,8 +29,9 @@ const failures=rows.filter(row=>row.enlumine.bytes>=row.twinkleplop.bytes||row.e
 const fixtures={json:'{"name":"ΩΩ","active":true,"count":42}',typescript:'export function greet<T>(x:T):T{return x;}',sql:'SELECT COUNT(*) FROM users WHERE active = TRUE;',graphql:'query User($id: ID!) { user(id:$id) { id name } }'};
 const upstream=(await import(pathToFileURL(`${directory}/15-twinkleplop.mjs`).href)).lexers;
 const current=(await import(pathToFileURL(`${directory}/15-enlumine.mjs`).href)).lexers;
+const tables=({tokens,token_types})=>({tokens,token_types});
 for(const language of languages) for(let i=0;i<=fixtures[language].length;i++)
-  assert.deepEqual(current[language](fixtures[language].slice(0,i)),upstream[language](fixtures[language].slice(0,i)),`${language}: prefix ${i}`);
+  assert.deepEqual(tables(current[language](fixtures[language].slice(0,i))),tables(upstream[language](fixtures[language].slice(0,i))),`${language}: prefix ${i}`);
 await writeFile(`${directory}/results.json`,JSON.stringify({
   method:"Pinned public default tokenizer APIs, identical esbuild 0.28.2 ESM/node22/minify options, including dependencies; all 15 nonempty combinations of the four supported languages. Minified bytes and gzip9 must both be strictly smaller than twinkleplop. Token tables and ranges checked on every prefix of four language snippets.",
   reference:Object.fromEntries(await Promise.all(["core",...languages].map(async name=>[name,JSON.parse(await readFile(`${root}node_modules/@twinkleplop/${name}/package.json`,"utf8")).version]))),

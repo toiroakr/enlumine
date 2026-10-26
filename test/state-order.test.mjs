@@ -4,6 +4,7 @@ import {build} from "esbuild";
 import ts from "typescript";
 import {brotliCompressSync,brotliDecompressSync} from "node:zlib";
 import {reorderStates,reorderRules} from "../scripts/grammar-order.mjs";
+import {expandPatterns} from "../scripts/combine-grammars.mjs";
 import {packGrammar} from "../scripts/pack-grammar.mjs";
 import {compile} from "@twinkleplop/core";
 import {execute,loadGrammar} from "../packages/core/dist/index.js";
@@ -28,7 +29,7 @@ async function grammars(language) {
   }
   visit(ast);
   assert.ok(value,language);
-  const tables=(Array.isArray(value)?value:[value]).filter(grammar=>grammar?.probe_mask?.$);
+  const tables=(language==="typescript"?expandPatterns:(tables=>tables))(Array.isArray(value)?value:[value]).filter(grammar=>grammar?.probe_mask?.$);
   assert.ok(tables.length,language);
   return tables;
 }
