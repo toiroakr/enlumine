@@ -35,24 +35,24 @@ export const parameters = claim((source, tokens, types, out, framesInput) => {
     const length = tokens[3 * before + 2] - tokens[3 * before + 1], opener = length > 1 ? source[tokens[3 * before + 2] - 2] : source[tokens[3 * view.prev(before - 1) + 2] - 1];
     return (opener === "{" || opener === ",") && (source[tokens[3 * after + 1] + 1] === ":" || tokens[3 * after + 2] - tokens[3 * after + 1] === 1 && view.starts(view.next(after + 1), "punctuation", ":"));
   };
-  const binds = (t: number, braced: boolean) => {
+  const binds = (t: number, nested: boolean) => {
     const before = view.prev(t - 1), after = view.next(t + 1);
-    if (braced && computedKey(before, after)) return false;
+    if (nested && computedKey(before, after)) return false;
     return (view.is(before, "punctuation") && "{[,:".includes(source[tokens[3 * before + 2] - 1]) || view.has(before, "operator", "..."))
       && (view.is(after, "punctuation") && ",}]".includes(source[tokens[3 * after + 1]]) || view.has(after, "operator", "="));
   };
   const collect = (at: number, offset: number, strict: boolean) => {
-    let atStart = true, afterDefault = false, pattern = false, braced = false, skip = 0;
+    let atStart = true, afterDefault = false, pattern = false, skip = 0;
     walk(at, offset, 1, (t, c, depth) => {
       if (c >= 0) {
         if (!depth) return true;
         if (skip && (depth < skip || c === 44 && depth === skip)) skip = 0;
         if (c === 44 && depth === 1) atStart = true, afterDefault = false;
-        else if (depth === 2 && atStart && !afterDefault && (c === 123 || c === 91)) pattern = true, braced = c === 123, atStart = false;
+        else if (depth === 2 && atStart && !afterDefault && (c === 123 || c === 91)) pattern = true, atStart = false;
         else if (depth === 1) pattern = false;
       } else if (depth > 1 && pattern) {
         if (isOperator(t, "=") && !skip) skip = depth;
-        else if (!skip && tokens[3 * t] === identifier && binds(t, braced && depth === 3)) found.push(t);
+        else if (!skip && tokens[3 * t] === identifier && binds(t, depth >= 3)) found.push(t);
       } else if (depth === 1 && atStart && !afterDefault) {
         if (tokens[3 * t] === identifier) strict && (tokens[3 * view.next(t + 1)] === template || view.has(view.next(t + 1), "operator", "<")) || found.push(t), atStart = false;
         else if (isOperator(t, "=")) atStart = false, afterDefault = true;

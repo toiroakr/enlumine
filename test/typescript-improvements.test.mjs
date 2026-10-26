@@ -311,6 +311,9 @@ labelCases("upper-case labels and labels that follow another label are labels", 
 cases("a computed key of a destructured parameter is not a parameter", [
   ["function f({ [key]: value }) {}", ["value"]],
   ["function f({ a: [x, y] }) {}", ["x", "y"]],
+  ["function f({ a: { [key]: value } }) {}", ["value"]],
+  ["function f([{ [key]: value }]) {}", ["value"]],
+  ["function f([c, d]: Q) {}", ["c", "d"]],
 ]);
 
 labelCases("labels inside a function with a return type annotation are labels", [
