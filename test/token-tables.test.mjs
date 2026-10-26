@@ -61,3 +61,31 @@ test("a name inside an expression may not become a property", () => {
   assert.ok(!sameTables(...change("const x = foo + end;", "end", "identifier", "property")));
   assert.ok(!sameTables(...change("call(end, other)", "end", "type", "property")));
 });
+
+const moves = (names, from, to, source, text) => {
+  const start = source.indexOf(text), range = [start, start + text.length];
+  return sameTables(table(names, [names.indexOf(to), ...range]), table(names, [names.indexOf(from), ...range]), source);
+};
+
+test("a type annotation is not allowed to become a parameter, a parameter of an arrow function is", () => {
+  const names = ["type", "parameter"];
+  assert.ok(moves(names, "type", "parameter", "const f = (Foo) => 1;", "Foo"));
+  assert.ok(!moves(names, "type", "parameter", "let x: Foo = 1;", "Foo"));
+  assert.ok(!moves(names, "type", "parameter", "f(Foo);", "Foo"));
+});
+
+test("a member kind is allowed only at a member start inside a class, interface or type literal", () => {
+  const names = ["identifier", "property"];
+  assert.ok(moves(names, "identifier", "property", "class A {\n  b = 1;\n}", "b"));
+  assert.ok(moves(names, "identifier", "property", "type T = {\n  b: 1;\n};", "b"));
+  assert.ok(!moves(names, "identifier", "property", "a;\nb = 1;", "b"));
+  assert.ok(!moves(names, "identifier", "property", "if (a) {\n  b = 1;\n}", "b"));
+});
+
+test("a contextual keyword is allowed to become a name only where it is used as one", () => {
+  const names = ["keyword", "identifier"];
+  assert.ok(moves(names, "keyword", "identifier", "const get = 1;", "get"));
+  assert.ok(moves(names, "keyword", "identifier", "x = { type: 1 };", "type"));
+  assert.ok(!moves(names, "keyword", "identifier", "type Foo = string;", "type"));
+  assert.ok(!moves(names, "keyword", "identifier", "import x from 'm';", "from"));
+});

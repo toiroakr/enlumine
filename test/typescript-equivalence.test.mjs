@@ -37,6 +37,28 @@ test("typescript: random token soup matches upstream token tables", () => {
   }
 });
 
+const softStatements = [
+  "const type = 1;", "type(x);", "obj.of(1);", "({ get: 1, set: 2 });", "function f(type, from, of) {}", "const g = (as, async) => as;",
+  "class A { type = 1; static async = 2; get() {} set(v) {} static from() {} }", "import { type as t } from 'm';", "x = { as, async, static };",
+  "const { type, of } = y;", "type Foo = string;", "for (const x of y) {}", "export type { A };", "declare module 'm' {}",
+  "abstract class B { abstract m(): void; readonly r = 1 }", "namespace N { export const a = 1 }", "let from = 1; from++;",
+  "interface I { readonly a: string; get: number; set(v: T): void; type: string }", "const o = { module: 1, namespace: 2, declare: 3, abstract: 4 };",
+  "a.type = b.from + c.of;", "if (as) { override(); }", "async function h() { await accessor(); }", "enum E { type, from }",
+];
+
+test("typescript: contextual keywords used as names match upstream token tables", () => {
+  const { random, pick } = generator(777);
+  for (let i = 0; i < 1500; i++) {
+    let source = "";
+    for (let j = 0, length = 1 + random(6); j < length; j++) source += pick(softStatements) + pick([" ", "\n", "\n\n"]);
+    same(source);
+  }
+  for (const statement of softStatements) {
+    same(statement);
+    for (let end = 1; end < statement.length; end++) same(statement.slice(0, end));
+  }
+});
+
 const javascript = ["let", "const", "function", "class", "async", "await", "x", "y", "FOO", "foo", "=", "=>", "(", ")", "{", "}", "[", "]", ",", ";", ":", ".", "?", "<", ">", "1", "'s'", "`t`", "...", "*", "new", "return", "extends", "if", "else", "get", "static", "(a, b = 1)", "{ a, b }", "a ? b : c", "// c", "/** doc @param {A} x */", "/* c */", "import", "from", "'m'", "export", "type", "as", "interface", "enum", "namespace", "<T>", "satisfies", "this", "super", "null", "true", "yield", "of", "in"];
 withoutSoftKeywords(javascript);
 const styles = [".a", "#b", "{", "}", "color", ":", "red", ";", "margin", "0", "px", "(", ")", "calc", "var", "--x", "@media", "(min-width: 1px)", ",", "!important", "/* c */", "&", ">", "+", "~", "[a=b]", "url(x)", "rgb(1,2,3)", " ", "\n"];
