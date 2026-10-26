@@ -1,0 +1,36 @@
+import { claim, typeId, View } from "./claims.js";
+import { inFrame, kindMask } from "./rules.js";
+import type { Frames } from "./rules.js";
+
+const modifiers = ["readonly", "public", "private", "protected", "static", "abstract", "declare", "override", "accessor"];
+
+export const declarations = claim((source, tokens, types, out, framesInput) => {
+  const frames = framesInput as Frames | undefined;
+  const parameter = typeId(types, "parameter");
+  let labelId = -1;
+  const label = () => labelId < 0 ? labelId = typeId(types, "label") : labelId;
+  const view = new View(source, tokens, types);
+  const starts = (i: number, ch: string) => view.starts(i, "punctuation", ch);
+  const sameLine = (a: number, b: number) => !source.slice(tokens[3 * a + 2], tokens[3 * b + 1]).includes("\n");
+  const blockKinds = frames ? ~kindMask(frames, "object", "class", "interface", "type_literal") : 0;
+  const memberKinds = frames ? kindMask(frames, "object", "class", "interface", "type_literal") : 0;
+  const memberStart = (bracket: number) => {
+    let head = bracket;
+    for (let at = view.prev(head - 1); view.hasAny(at, "keyword", ...modifiers); at = view.prev(head - 1)) head = at;
+    return frames!.at_start[head] === 1;
+  };
+  for (const i of view.of("identifier")) {
+    const next = view.next(i + 1), before = view.prev(i - 1);
+    if (view.hasAny(before, "keyword", "break", "continue")) {
+      if (sameLine(before, i)) out.emit(i, label(), 50);
+    } else if (starts(next, ":") && frames) {
+      if (frames.at_start[i] === 1 && source[tokens[3 * i + 1] - 1] !== "#" && inFrame(frames, i, blockKinds) && (before < 0 || view.is(before, "punctuation") && ";{}".includes(source[tokens[3 * before + 2] - 1]))) out.emit(i, label(), 50);
+      else if (starts(before, "[") && view.text(before).endsWith("[") && memberStart(before) && (memberKinds >> frames.frames[frames.frames[frames.active_frame[i]].parent].kind & 1) === 1) out.emit(i, parameter, 50);
+    }
+  }
+  for (const i of view.of("keyword")) {
+    if (!view.has(i, "keyword", "catch") || view.has(view.prev(i - 1), "punctuation", ".")) continue;
+    const open = view.next(i + 1), name = view.next(open + 1), after = view.next(name + 1);
+    if (view.has(open, "punctuation", "(") && view.is(name, "identifier") && (starts(after, ")") || starts(after, ":"))) out.emit(name, parameter, 50);
+  }
+});

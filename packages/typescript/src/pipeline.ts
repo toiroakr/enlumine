@@ -2,6 +2,7 @@ import { typescriptFrames } from "enlumine:typescript-frames";
 import { trackFrames } from "./frames.js";
 import { functionBindings } from "./bindings.js";
 import { classNames, constBindings, constants, enums, namespaces } from "./claims.js";
+import { declarations } from "./declarations.js";
 import { embed } from "./languages.js";
 import { parameters } from "./params.js";
 import { properties } from "./property.js";
@@ -24,5 +25,6 @@ export const pipeline = [
 	enums,
 	parameters,
 	genericShapes,
+	declarations,
 	embed,
 ];

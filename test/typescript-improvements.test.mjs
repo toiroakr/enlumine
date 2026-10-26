@@ -233,3 +233,39 @@ test("names bound by a destructured parameter are parameters", () => {
   assert.deepEqual(parameters("function f({ a = other }) {}"), ["a"]);
   assert.deepEqual(parameters("function f(opts: { a: number, b: string }) {}"), ["opts"]);
 });
+
+const labels = named("label");
+
+const labelCases = (title, expected) =>
+  test(title, () => {
+    for (const [source, names] of expected) assert.deepEqual(labels(source), names, source);
+  });
+
+labelCases("a statement label and the labels named by break and continue are labels", [
+  ["outer: for (const a of b) { continue outer; }", ["outer", "outer"]],
+  ["function f() { a: 1; }", ["a"]],
+  ["a: for (;;) { b: while (x) { break a; } }", ["a", "b", "a"]],
+  ["x: for (;;) { break\nx }", ["x"]],
+]);
+
+labelCases("object keys, ternary branches, case clauses and declarations are not labels", [
+  ["const o = { a: 1, b: c };", []],
+  ["x = c ? a : b;", []],
+  ["switch (x) { case A: break; default: f(); }", []],
+  ["let a = 1, b: number = 2;", []],
+  ["class A { m: number; }", []],
+]);
+
+cases("the name in catch (e) is a parameter", [
+  ["try { f(); } catch (e) { g(e); }", ["e"]],
+  ["try {} catch (e: unknown) {}", ["e"]],
+  ["p.catch(e);", []],
+]);
+
+cases("the key of an index signature is a parameter", [
+  ["interface I { [key: string]: number }", ["key"]],
+  ["type M = { [k: string]: V; t: 1 };", ["k"]],
+  ["class A { readonly [k: string]: V; static [x: number]: W }", ["k", "x"]],
+  ["const o = { [k]: 1, [a ? b : c]: 2 };", []],
+  ["class A { m = [a, b]; }", []],
+]);

@@ -13,6 +13,7 @@ const light: Readonly<Theme> = Object.freeze({
   property: "#2455a4",
   variable: "#a03345",
   parameter: "#a64318",
+  label: "#4d7c0f",
   decorator: "#7c3aad",
 });
 export default light;

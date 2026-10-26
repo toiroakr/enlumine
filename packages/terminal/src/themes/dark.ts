@@ -13,6 +13,7 @@ const dark: Readonly<Theme> = Object.freeze({
   property: "#82aaff",
   variable: "#f07178",
   parameter: "#f78c6c",
+  label: "#addb67",
   decorator: "#c792ea",
 });
 export default dark;
