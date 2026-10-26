@@ -16,8 +16,12 @@ import {sqlLexicalData} from "./sql-lexical-data.mjs";
 import {removePatternSeals} from "./grammar-seals.mjs";
 import {jsonLexicalData} from "./json-lexical-data.mjs";
 import {frameAdapter,compileFrameSpecs} from "./frame-specs.mjs";
+import {propertyMangling} from "./property-mangling.mjs";
+import {typescriptFrameData} from "./typescript-frame-data.mjs";
+import {typescriptTables} from "./typescript-grammar-data.mjs";
 let sqlLexicalMetadata;
 let jsonLexicalMetadata;
+let typescriptMetadata;
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const outputRoot = resolve(process.env.ENLUMINE_BUILD_DIR ?? root);
@@ -49,6 +53,20 @@ const plugin = {
       notices.set(generated.packageName,generated.notice);
       return {contents:generated.contents,loader:"ts",resolveDir:root};
     });
+    build.onResolve({filter:/^enlumine:typescript-grammar$/},()=>({path:"grammar",namespace:"enlumine-typescript-grammar"}));
+    build.onLoad({filter:/.*/,namespace:"enlumine-typescript-grammar"},async()=>{
+      const generated=await typescriptTables();
+      typescriptMetadata=generated.metadata;
+      const tables=generated.tables;
+      for(const name of ["core","typescript","javascript","html","css"]) {
+        const packageRoot=resolve(fileURLToPath(import.meta.resolve("@twinkleplop/"+name)),"../..");
+        const pkg=JSON.parse(await readFile(resolve(packageRoot,"package.json"),"utf8"));
+        notices.set(pkg.name,`${pkg.name}@${pkg.version}\n${await readFile(resolve(packageRoot,"LICENSE"),"utf8")}`);
+      }
+      return {contents:`import {loadGrammar} from "@enlumine/core";\n${Object.entries(tables).map(([name,table])=>`export const ${name}=${serialize(table)};`).join("\n")}`,loader:"ts",resolveDir:root};
+    });
+    build.onResolve({filter:/^enlumine:typescript-frames$/},()=>({path:"frames",namespace:"enlumine-typescript-frames"}));
+    build.onLoad({filter:/.*/,namespace:"enlumine-typescript-frames"},async()=>({contents:await typescriptFrameData(),loader:"ts",resolveDir:root}));
     build.onResolve({filter:/^enlumine:sql-package$/},()=>({path:"package",namespace:"enlumine-sql-package"}));
     build.onLoad({filter:/.*/,namespace:"enlumine-sql-package"},()=>({
       contents:`export {default} from ${JSON.stringify(resolve(root,"packages/sql/src/index.ts"))};
@@ -491,7 +509,7 @@ for (const name of packages) {
   if (name === "core" && Object.keys(result.metafile.inputs).some(path => !path.startsWith("packages/core/src/")))
     throw new Error("Core must not bundle language or rendering code");
   metadata[name] = result.metafile;
-  metadata[name].enlumine = {minifier: sizeBaseline ? "esbuild" : "esbuild + terser", inputAttribution: "esbuild output before final compression", grammarOrder:[],...(name==="sql"&&!genericSql?{lexical:sqlLexicalMetadata}:name==="json"?{lexical:jsonLexicalMetadata}:{})};
+  metadata[name].enlumine = {minifier: sizeBaseline ? "esbuild" : "esbuild + terser", inputAttribution: "esbuild output before final compression", grammarOrder:[],...(name==="sql"&&!genericSql?{lexical:sqlLexicalMetadata}:name==="json"?{lexical:jsonLexicalMetadata}:name==="typescript"?{dedicated:typescriptMetadata}:{})};
   const manifest = JSON.parse(await readFile(resolve(root, "packages", name, "package.json"), "utf8"));
   if(name==="sql")for(const [entry,exports] of [["index",["default"]],["editor",["highlightSqlLines"]]]) {
     const path=resolve(outputRoot,"packages/sql/dist",`${entry}.js`);
@@ -506,7 +524,8 @@ for (const name of packages) {
     const original = await readFile(file, "utf8");
     const pooled = sizeBaseline || process.env.ENLUMINE_SEPARATE_GRAMMARS === "1" ? original
       : combineGrammars(original, result=>metadata[name].enlumine.grammarOrder.push({file:path,...result}));
-    const code = sizeBaseline ? original : (await minify(pooled, {module: true, ecma: 2022,
+    const mangle = name === "typescript" ? await propertyMangling(pooled, resolve(outputRoot, "packages/core/dist")) : true;
+    const code = sizeBaseline ? original : (await minify(pooled, {module: true, ecma: 2022, mangle,
       compress: {passes: 4, hoist_funs: name === "core"}, format: {comments: /@license|@preserve|^!/}})).code + "\n";
     await writeFile(file, code);
     output.bytes = Buffer.byteLength(code);
