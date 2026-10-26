@@ -7,7 +7,7 @@ export const parameters = claim((source, tokens, types, out, framesInput) => {
   const frames = framesInput as (Frames & { signals: ArrayLike<number> }) | undefined;
   const parameter = typeId(types, "parameter");
   const identifier = types.indexOf("identifier"), punctuation = types.indexOf("punctuation");
-  const operator = types.indexOf("operator"), keyword = types.indexOf("keyword"), fn = types.indexOf("function");
+  const operator = types.indexOf("operator"), keyword = types.indexOf("keyword"), fn = types.indexOf("function"), template = types.indexOf("template");
   if (identifier < 0 || punctuation < 0) return;
   const view = new View(source, tokens, types), count = view.count, found: number[] = [];
   const isOperator = (i: number, text: string) => tokens[3 * i] === operator && view.text(i) === text;
@@ -28,27 +28,31 @@ export const parameters = claim((source, tokens, types, out, framesInput) => {
     }
     return null;
   };
-  const collect = (at: number, offset: number) => {
+  const collect = (at: number, offset: number, strict: boolean) => {
     let atStart = true, afterDefault = false;
     walk(at, offset, 1, (t, c, depth) => {
       if (c >= 0) {
         if (!depth) return true;
         if (c === 44 && depth === 1) atStart = true, afterDefault = false;
       } else if (depth === 1 && atStart && !afterDefault) {
-        if (tokens[3 * t] === identifier) found.push(t), atStart = false;
+        if (tokens[3 * t] === identifier) strict && (tokens[3 * view.next(t + 1)] === template || view.is(view.next(t + 1), "operator", "<")) || found.push(t), atStart = false;
         else if (isOperator(t, "=")) atStart = false, afterDefault = true;
         else if (!prefix(t) || !followedByName(t + 1)) atStart = false;
       }
     });
   };
-  const arrowParen = (anchor: number, offset: number) => {
+  const arrowParen = (anchor: number, offset: number, extended: boolean) => {
     const close = walk(anchor, offset, 1, (_, __, depth) => !depth);
-    if (!close || close[1] + 1 < tokens[3 * close[0] + 2]) return false;
-    const next = view.next(close[0] + 1);
+    if (!close) return false;
+    const before = view.prev(anchor - 1), end = tokens[3 * close[0] + 2];
+    const previous = offset > 0 ? source.charCodeAt(tokens[3 * anchor + 1] + offset - 1) : before >= 0 && tokens[3 * before] === punctuation ? source.charCodeAt(tokens[3 * before + 2] - 1) : -1;
+    const merged = extended && close[1] + 2 === end && source.charCodeAt(close[1] + 1) === 58 && previous !== 41 && previous !== 93 && (offset > 0 || before < 0 || tokens[3 * before] === punctuation || tokens[3 * before] === keyword || tokens[3 * before] === operator && !isOperator(before, "?"));
+    if (close[1] + 1 < end && !merged) return false;
+    const next = merged ? close[0] : view.next(close[0] + 1);
     if (next < 0) return false;
-    if (tokens[3 * next] === punctuation && tokens[3 * next + 2] - tokens[3 * next + 1] === 1 && source.charCodeAt(tokens[3 * next + 1]) === 58) {
+    if (merged || tokens[3 * next] === punctuation && tokens[3 * next + 2] - tokens[3 * next + 1] === 1 && source.charCodeAt(tokens[3 * next + 1]) === 58) {
       let arrow = false;
-      walk(next, 0, 0, (t, c, depth) => c < 0 ? depth === 0 && isOperator(t, "=>") && (arrow = true) : depth < 0 || depth === 0 && (c === 44 || c === 59));
+      walk(next, merged ? close[1] + 1 - tokens[3 * next + 1] : 0, 0, (t, c, depth) => c < 0 ? depth === 0 && isOperator(t, "=>") && (arrow = true) : depth < 0 || depth === 0 && (c === 44 || c === 59));
       return arrow;
     }
     return isOperator(next, "=>");
@@ -62,7 +66,7 @@ export const parameters = claim((source, tokens, types, out, framesInput) => {
     }
     if (at < 0 || tokens[3 * at] !== punctuation || source.charCodeAt(tokens[3 * at + 1]) !== 40) return false;
     found.length = 0;
-    collect(at, 0);
+    collect(at, 0, false);
     return true;
   };
   const member = (i: number) => !!frames && frames.at_start[i] === 1 && ["class", "object", "interface"].includes(frames.kind_names[frames.frames[frames.active_frame[i]].kind]);
@@ -81,22 +85,25 @@ export const parameters = claim((source, tokens, types, out, framesInput) => {
       if (member(w)) matched = paramsFrom(w + 1);
       if (!matched && isOperator(view.next(w + 1), "=>")) { out.emit(w, parameter, 15); continue; }
     } else if (kind === punctuation && frames) {
-      for (let s = 0, start = tokens[3 * w + 1]; start + s < tokens[3 * w + 2]; s++) {
-        if (source.charCodeAt(start + s) !== 40) continue;
-        if (s === 0) {
-          const prev = view.prev(w - 1);
-          if (tokens[3 * prev] === punctuation && source.charCodeAt(tokens[3 * prev + 2] - 1) === 58) {
-            const ternary = !!(1 & frames.signals[prev]) && !isOperator(view.prev(prev - 1), "?");
-            const frame = frames.frames[w > 0 ? frames.active_frame[w - 1] : 0];
-            if (!(frame.bracket === 1 && frame.kind === frames.kind_names.indexOf("object")) && !ternary) continue;
+      const start = tokens[3 * w + 1], length = tokens[3 * w + 2] - start;
+      let paren = false;
+      for (let s = 0; s < length && !paren; s++) paren = source.charCodeAt(start + s) === 40;
+      let guarded = false;
+      if (paren) {
+        const prev = view.prev(w - 1);
+        if (tokens[3 * prev] === punctuation && source.charCodeAt(tokens[3 * prev + 2] - 1) === 58) {
+          const ternary = !!(1 & frames.signals[prev]) && !isOperator(view.prev(prev - 1), "?");
+          const frame = frames.frames[w > 0 ? frames.active_frame[w - 1] : 0];
+          guarded = !(frame.bracket === 1 && frame.kind === frames.kind_names.indexOf("object")) && !ternary;
+        }
+        for (let extended = 0; extended < 2 && !matched; extended++)
+          for (let s = 0; s < length; s++) {
+            if (source.charCodeAt(start + s) !== 40 || !extended && s === 0 && guarded || !arrowParen(w, s, !!extended)) continue;
+            found.length = 0;
+            collect(w, s, !!extended);
+            matched = true;
+            break;
           }
-        }
-        if (arrowParen(w, s)) {
-          found.length = 0;
-          collect(w, s);
-          matched = true;
-          break;
-        }
       }
     }
     if (matched) for (const i of found) out.emit(i, parameter, 15);

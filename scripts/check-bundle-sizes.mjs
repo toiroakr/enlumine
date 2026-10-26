@@ -3,6 +3,7 @@ import { gzipSync } from "node:zlib";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import assert from "node:assert/strict";
+import {sameTables} from "./token-tables.mjs";
 
 const root=fileURLToPath(new URL("../",import.meta.url));
 const directory=`${root}.generated/size-floor`;
@@ -30,8 +31,11 @@ const fixtures={json:'{"name":"ΩΩ","active":true,"count":42}',typescript:'expo
 const upstream=(await import(pathToFileURL(`${directory}/15-twinkleplop.mjs`).href)).lexers;
 const current=(await import(pathToFileURL(`${directory}/15-enlumine.mjs`).href)).lexers;
 const tables=({tokens,token_types})=>({tokens,token_types});
-for(const language of languages) for(let i=0;i<=fixtures[language].length;i++)
-  assert.deepEqual(tables(current[language](fixtures[language].slice(0,i))),tables(upstream[language](fixtures[language].slice(0,i))),`${language}: prefix ${i}`);
+for(const language of languages) for(let i=0;i<=fixtures[language].length;i++) {
+  const actual=current[language](fixtures[language].slice(0,i)),expected=upstream[language](fixtures[language].slice(0,i));
+  if(language==="typescript")assert.ok(sameTables(actual,expected,fixtures[language].slice(0,i)),`${language}: prefix ${i}`);
+  else assert.deepEqual(tables(actual),tables(expected),`${language}: prefix ${i}`);
+}
 await writeFile(`${directory}/results.json`,JSON.stringify({
   method:"Pinned public default tokenizer APIs, identical esbuild 0.28.2 ESM/node22/minify options, including dependencies; all 15 nonempty combinations of the four supported languages. Minified bytes and gzip9 must both be strictly smaller than twinkleplop. Token tables and ranges checked on every prefix of four language snippets.",
   reference:Object.fromEntries(await Promise.all(["core",...languages].map(async name=>[name,JSON.parse(await readFile(`${root}node_modules/@twinkleplop/${name}/package.json`,"utf8")).version]))),
