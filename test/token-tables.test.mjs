@@ -10,7 +10,7 @@ test("identical tables are the same", () => {
 });
 
 test("a token the reference calls an identifier may be a parameter inside a parameter list", () => {
-  assert.ok(sameTables(table(types, [1, 2, 3]), table(types, [0, 2, 3]), "f(a)"));
+  assert.ok(sameTables(table(types, [1, 11, 12]), table(types, [0, 11, 12]), "function f(a) {}"));
   assert.ok(sameTables(table(types, [1, 0, 1]), table(types, [0, 0, 1]), "a => a"));
 });
 
@@ -95,4 +95,17 @@ test("an object literal key is not allowed to become a label, a statement in a b
   assert.ok(moves(names, "identifier", "label", "function f() {\n  foo: for (;;) {}\n}", "foo"));
   assert.ok(!moves(names, "identifier", "label", "x = { foo: 1 };", "foo"));
   assert.ok(!moves(names, "identifier", "label", "f({ foo: 1 });", "foo"));
+});
+
+test("a name in an unfinished call is not a parameter, a name in an unfinished function head is", () => {
+  const names = ["identifier", "parameter"];
+  assert.ok(moves(names, "identifier", "parameter", "function f(a, x", "x"));
+  assert.ok(!moves(names, "identifier", "parameter", "f(x", "x"));
+  assert.ok(!moves(names, "identifier", "parameter", "f(x)", "x"));
+});
+
+test("a contextual keyword that is an object key is not allowed to become a label", () => {
+  const names = ["keyword", "label"];
+  assert.ok(moves(names, "keyword", "label", "function f() {\n  type: for (;;) {}\n}", "type"));
+  assert.ok(!moves(names, "keyword", "label", "x = { type: 1 };", "type"));
 });

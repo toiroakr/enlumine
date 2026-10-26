@@ -2,6 +2,8 @@ import { claim, typeId, View } from "./claims.js";
 import { fieldModifiers, inFrame, kindMask } from "./rules.js";
 import type { Frames } from "./rules.js";
 
+const objectHeads = ["const", "let", "var", "return", "throw", "typeof", "case", "new", "extends", "implements", "in", "of", "yield", "await"];
+
 export const declarations = claim((source, tokens, types, out, framesInput) => {
   const frames = framesInput as Frames | undefined;
   const parameter = typeId(types, "parameter");
@@ -21,14 +23,14 @@ export const declarations = claim((source, tokens, types, out, framesInput) => {
     const enter = frames!.frames[frames!.active_frame[i]].enter_idx;
     if (enter < 0) return inFrame(frames!, i, blockKinds);
     const text = view.text(enter), brace = text.lastIndexOf("{");
-    if (brace > 0) return ")};{".includes(text[brace - 1]) && inFrame(frames!, i, blockKinds);
+    if (brace > 0) return !"=(,:[?".includes(text[brace - 1]) && inFrame(frames!, i, blockKinds);
     const head = view.prev(enter - 1);
     if (head < 0) return inFrame(frames!, i, blockKinds);
-    if (view.is(head, "punctuation")) return ")};{".includes(source[tokens[3 * head + 2] - 1]) && inFrame(frames!, i, blockKinds);
-    if (view.is(head, "keyword")) return view.hasAny(head, "keyword", "else", "try", "finally", "do", "catch", "static");
-    if (view.has(head, "operator", "=>")) return inFrame(frames!, i, blockKinds);
+    if (view.is(head, "punctuation")) return !"=(,:[?".includes(source[tokens[3 * head + 2] - 1]) && inFrame(frames!, i, blockKinds);
+    if (view.is(head, "keyword")) return view.hasAny(head, "keyword", "else", "try", "finally", "do", "catch", "static") || !view.hasAny(head, "keyword", ...objectHeads) && inFrame(frames!, i, blockKinds);
+    if (view.is(head, "operator")) return view.has(head, "operator", "=>") && inFrame(frames!, i, blockKinds);
     const before = view.prev(head - 1);
-    return view.is(head, "namespace") && before >= 0 && (view.has(before, "keyword", "namespace") || view.has(before, "keyword", "module"));
+    return view.is(head, "namespace") && before >= 0 && (view.has(before, "keyword", "namespace") || view.has(before, "keyword", "module")) || inFrame(frames!, i, blockKinds);
   };
   const labeled = new Set<number>();
   const names = [...view.of("identifier"), ...view.of("constant")].sort((a, b) => a - b);

@@ -312,3 +312,8 @@ cases("a computed key of a destructured parameter is not a parameter", [
   ["function f({ [key]: value }) {}", ["value"]],
   ["function f({ a: [x, y] }) {}", ["x", "y"]],
 ]);
+
+labelCases("labels inside a function with a return type annotation are labels", [
+  ["function f(): void { again: while (ready) { break again; } }", ["again", "again"]],
+  ["const f = (): Promise<void> => { again: for (;;) { break again; } };", ["again", "again"]],
+]);

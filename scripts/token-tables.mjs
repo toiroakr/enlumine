@@ -53,11 +53,11 @@ const afterSoftBinding = (source, start) => new RegExp(`(?:const|let|var)\\s+(?:
 const bindsArrowWithSoftParameter = (source, start, end) => new RegExp(`^\\s*=\\s*(?:async\\s+)?\\(?[^()=]*\\b(?:${softAlternation})\\b[^()=]*\\)?\\s*=>`).test(source.slice(end, end + 200));
 
 const afterJump = (source, start) => /\b(?:break|continue)[ \t]+$/.test(context(source, start));
-const blockHead = /(?:[)};]|\b(?:else|try|finally|do)|=>)\s*$/;
+const notBlockHead = /(?:[=(,:[?]|\b(?:const|let|var|return|throw|typeof|case|new|extends|implements|in|of|yield|await))\s*$/;
 const labelDefinition = (source, start, end) => {
   if (!/^(?:\s|\/\*[^]*?\*\/|\/\/[^\n]*\n)*:/.test(source.slice(end, end + 200)) || !/(?:^|[;{}])\s*(?:[\w$]+\s*:\s*)*$/.test(context(source, start))) return false;
   const info = brackets(source), open = info.inner[start];
-  return open < 0 || info.text[open] === "{" && (headOf(info, open).trim() === "" || blockHead.test(headOf(info, open)));
+  return open < 0 || info.text[open] === "{" && !notBlockHead.test(headOf(info, open)) && !memberScope(info, open);
 };
 
 const skipped = "(?:\\s|\\/\\*[^]*?\\*\\/|\\/\\/[^\\n]*\\n)*";
@@ -75,9 +75,10 @@ const parameterPosition = (source, start, end) => {
   while (text[list] !== "(") if ((list = info.parent.get(list)) === undefined || list < 0) return false;
   if (list !== top ? !patternName.test(after) : !(followsName.test(after) && beforeName.test(context(source, start)))) return false;
   const head = headOf(info, list), close = info.match.get(list);
-  if (close === undefined || /\b(?:function|catch)\s*\*?\s*[\w$]*\s*(?:<[^()]*>)?\s*$/.test(head)) return true;
-  const rest = text.slice(close + 1, close + 400);
-  if (/^\s*$/.test(rest) || /^\s*(?::[^;{}=]*)?=>/.test(rest)) return true;
+  if (/\b(?:function|catch)\s*\*?\s*[\w$]*\s*(?:<[^()]*>)?\s*$/.test(head)) return true;
+  const rest = close === undefined ? "" : text.slice(close + 1, close + 400);
+  if (/^\s*$/.test(rest)) return /=\s*(?:async\s*)?$/.test(head) || methodHead.test(head) && memberScope(info, info.inner[list]);
+  if (/^\s*(?::[^;{}=]*)?=>/.test(rest)) return true;
   if (/^\s*[{:]/.test(rest)) return !/\b(?:if|while|for|switch|with|return|typeof|await)\s*$/.test(head);
   return /^\s*[;,]|^[^\S\n]*\n/.test(rest) && methodHead.test(head) && memberScope(info, info.inner[list]);
 };
@@ -96,7 +97,8 @@ const improvements = [
   { from: "type", to: "identifier", when: unterminatedAngles },
   { from: "keyword", to: "property", when: atMemberStart },
   { from: "keyword", to: "function", when: atMemberStart },
-  ...["identifier", "function", "parameter", "property", "constant", "class_name", "type", "namespace", "label"].map(to => ({ from: "keyword", to, when: softKeyword })),
+  ...["identifier", "function", "parameter", "property", "constant", "class_name", "type", "namespace"].map(to => ({ from: "keyword", to, when: softKeyword })),
+  { from: "keyword", to: "label", when: (source, start, end) => softKeyword(source, start, end) && labelDefinition(source, start, end) },
   { from: "operator", to: "punctuation", when: angleAfterSoftKeyword },
   { from: "identifier", to: "type", when: typeParameterOfSoftKeyword },
   { from: "type", to: "identifier", when: afterSoftBinding },
