@@ -38,7 +38,7 @@ function spreadOrOpener(view: View, at: number) {
 }
 
 function span(view: View, cfg: number, from: number, mark: number[], stops: (i: number) => boolean): number {
-  const { tokens, count } = view;
+  const { count } = view;
   const close = cfg & VERIFY ? closingAngle(view, from - 1) : 0;
   if (close < 0 || cfg & VERIFY && !follows(view, view.next(close + 1), /^([=|&>?!]|=>)$/)) return FAIL;
   let paren = 0, brace = 0, bracket = 0, angle = 0, operand = false;

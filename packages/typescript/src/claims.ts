@@ -26,7 +26,6 @@ export class View {
     this.count = tokens.length / 3;
     this.comment = types.indexOf("comment");
   }
-  kind(i: number) { return this.tokens[3 * i]; }
   text(i: number) { return this.source.slice(this.tokens[3 * i + 1], this.tokens[3 * i + 2]); }
   type(i: number) { return this.types[this.tokens[3 * i]]; }
   is(i: number, type: string) { return this.types[this.tokens[3 * i]] === type; }

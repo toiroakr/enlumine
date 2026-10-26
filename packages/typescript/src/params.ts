@@ -1,9 +1,8 @@
 import { claim, typeId, View } from "./claims.js";
-import { kindMask } from "./rules.js";
+import { fieldModifiers, kindMask, softKeywords } from "./rules.js";
 import type { Frames } from "./rules.js";
 
-const softNames = ["type", "from", "of", "as", "get", "set", "async", "static", "readonly", "declare", "abstract", "accessor", "override", "module", "namespace"];
-const modifiers = ["get", "set", "async", "readonly", "public", "private", "protected", "static", "abstract", "override", "accessor", "declare"];
+const modifiers = [...fieldModifiers, "get", "set", "async"];
 
 export const parameters = claim((source, tokens, types, out, framesInput) => {
   const frames = framesInput as (Frames & { signals: ArrayLike<number> }) | undefined;
@@ -49,7 +48,7 @@ export const parameters = claim((source, tokens, types, out, framesInput) => {
       } else if (depth === 1 && atStart && !afterDefault) {
         if (tokens[3 * t] === identifier) strict && (tokens[3 * view.next(t + 1)] === template || view.has(view.next(t + 1), "operator", "<")) || found.push(t), atStart = false;
         else if (isOperator(t, "=")) atStart = false, afterDefault = true;
-        else if (tokens[3 * t] === keyword && softNames.includes(view.text(t)) && nameEnds(view.next(t + 1))) found.push(t), atStart = false;
+        else if (tokens[3 * t] === keyword && softKeywords.includes(view.text(t)) && nameEnds(view.next(t + 1))) found.push(t), atStart = false;
         else if (!prefix(t) || !followedByName(t + 1)) atStart = false;
       }
     });

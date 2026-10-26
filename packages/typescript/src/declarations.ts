@@ -1,8 +1,6 @@
 import { claim, typeId, View } from "./claims.js";
-import { inFrame, kindMask } from "./rules.js";
+import { fieldModifiers, inFrame, kindMask } from "./rules.js";
 import type { Frames } from "./rules.js";
-
-const modifiers = ["readonly", "public", "private", "protected", "static", "abstract", "declare", "override", "accessor"];
 
 export const declarations = claim((source, tokens, types, out, framesInput) => {
   const frames = framesInput as Frames | undefined;
@@ -16,7 +14,7 @@ export const declarations = claim((source, tokens, types, out, framesInput) => {
   const memberKinds = frames ? kindMask(frames, "object", "class", "interface", "type_literal") : 0;
   const memberStart = (bracket: number) => {
     let head = bracket;
-    for (let at = view.prev(head - 1); view.hasAny(at, "keyword", ...modifiers); at = view.prev(head - 1)) head = at;
+    for (let at = view.prev(head - 1); view.hasAny(at, "keyword", ...fieldModifiers); at = view.prev(head - 1)) head = at;
     return frames!.at_start[head] === 1;
   };
   for (const i of view.of("identifier")) {

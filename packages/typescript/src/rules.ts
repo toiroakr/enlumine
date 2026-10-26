@@ -55,9 +55,9 @@ export const reservedNames: Pass = (source, result) => {
 };
 
 const statementKeywords = ["for", "while", "do", "if", "switch", "try", "with"];
-const softKeywords = ["type", "from", "of", "as", "get", "set", "async", "static", "readonly", "declare", "abstract", "accessor", "override", "module", "namespace"];
+export const softKeywords = ["type", "from", "of", "as", "get", "set", "async", "static", "readonly", "declare", "abstract", "accessor", "override", "module", "namespace"];
 const callableKeywords = ["type", "get", "set", "from", "module", "namespace"];
-const fieldModifiers = ["readonly", "public", "private", "protected", "static", "abstract", "declare", "override", "accessor"];
+export const fieldModifiers = ["readonly", "public", "private", "protected", "static", "abstract", "declare", "override", "accessor"];
 
 export const propertyScope = claim((source, tokens, types, out, frames) => {
   const f = frames as Frames | undefined;
