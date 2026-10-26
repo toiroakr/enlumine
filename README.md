@@ -132,7 +132,7 @@ The packaged executable is named `enlumine`. It reads one file or standard input
 
 ## Runtime architecture
 
-Pinned twinkleplop packages are development dependencies. Build adapters prepare TypeScript and GraphQL grammars as compressed tables. TypeScript replaces the upstream general-purpose reclassification engine with a TypeScript-specific implementation, and keeps the JavaScript, TypeScript, CSS, HTML, and JSON grammar data it needs for embedded regions. Scope-tracking specifications are compiled at build time, stripped of unused compiler-only fields, and pooled with grammar data; internal property names are shortened by the build.
+Pinned twinkleplop packages are development dependencies. Build adapters prepare TypeScript and GraphQL grammars as compressed tables. TypeScript replaces the upstream general-purpose reclassification engine with a TypeScript-specific implementation, and keeps the JavaScript, TypeScript, CSS, HTML, and JSDoc grammar data it needs for embedded regions. Scope-tracking specifications are compiled at build time, stripped of unused compiler-only fields, and pooled with grammar data; internal property names are shortened by the build.
 
 JSON and SQL use specialized lexical scanners checked against pinned upstream grammar signatures. SQL vocabulary, operators, probes, and token IDs come from the upstream module. Its vocabulary is emitted as plain strings, so SQL and the SQL/GraphQL editor entries do not load `node:zlib` or decompress data during import. The TypeScript and GraphQL document entries use Node's built-in Brotli decoder.
 
