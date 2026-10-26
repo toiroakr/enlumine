@@ -84,7 +84,7 @@ function tables(spec: Spec, types: string[]) {
   });
   const ruleLists = types.map(() => [] as ReturnType<typeof prepare>[]);
   for (const rule of kinds.prev_rules) if (id(rule.type) >= 0) ruleLists[id(rule.type)].push(prepare(rule));
-  return { punct: id(spec.punct_type), comment: id("comment"), words, ruleLists, transparent: types.map(name => spec.at_start_transparent.includes(name)) };
+  return { punct: id(spec.punct_type), comment: id("comment"), keyword: id("keyword"), operator: id("operator"), words, ruleLists, transparent: types.map(name => spec.at_start_transparent.includes(name)) };
 }
 
 type Tables = ReturnType<typeof tables>;
@@ -94,16 +94,36 @@ export function trackFrames(spec: Spec) {
   const kinds = spec.brace_kinds, cache = new WeakMap<string[], Tables>();
   const { rearm_kind_ids: rearm, optional_kind_ids: optional } = spec;
   const opens = [spec.paren_open, spec.brace_open, spec.bracket_open], closes = [spec.paren_close, spec.brace_close, spec.bracket_close];
+  const memberKinds = ["class", "interface", "type_literal"].reduce((mask, name) => mask | 1 << kinds.kind_names.indexOf(name), 0);
+  const objectKind = kinds.kind_names.indexOf("object"), aliasBit = 1 << spec.stmt_flag_names.indexOf("alias_head");
+  const continuation = new Set("extends in instanceof as is satisfies implements".split(" "));
+  const typeEnd = new Set("null undefined void this never unknown any object symbol bigint string number boolean".split(" "));
   return (source: string, input: PackedTokens) => {
     let table = cache.get(input.token_types);
     if (!table) cache.set(input.token_types, table = tables(spec, input.token_types));
-    const { punct, comment, words, ruleLists, transparent } = table;
+    const { punct, comment, keyword, operator, words, ruleLists, transparent } = table;
     const tokens = input.tokens, count = tokens.length / 3;
-    const active = new Uint32Array(count), atStart = new Uint8Array(count), signals = new Uint8Array(count);
+    const active = new Uint32Array(count), atStart = new Uint8Array(count), signals = new Uint8Array(count), asi = new Uint8Array(count);
     const frames = [{ bracket: -1, kind: 0, enter_idx: -1, parent: -1 }];
     const stack: number[][] = [], counts = [0, 0, 0];
     let current = 0, start = 1, ternary = 0, statement = 0, afterQmark = false, angles = 0, marker = -1, markerAt = "", last = -1;
     const where = () => counts + "," + angles;
+    const lineBreak = (at: number, to: number) => {
+      for (let q = tokens[3 * at + 2]; q < to; q++) if (source.charCodeAt(q) === 10) return true;
+      return false;
+    };
+    const completes = (at: number) => {
+      const kind = tokens[3 * at], end = tokens[3 * at + 2];
+      if (kind === punct) { const c = source.charCodeAt(end - 1); return c === 41 || c === 93 || c === 125; }
+      return kind === operator ? /^>+$/.test(source.slice(tokens[3 * at + 1], end)) : kind !== keyword || typeEnd.has(source.slice(tokens[3 * at + 1], end));
+    };
+    const named = (at: number) => {
+      let next = at + 1;
+      while (next < count && tokens[3 * next] === comment) next++;
+      const c = next < count ? source[tokens[3 * next + 1]] : "";
+      return tokens[3 * next] === punct ? c === ":" : tokens[3 * next] === operator && c === "?";
+    };
+    const begins = (at: number, kind: number, from: number, to: number) => kind === punct ? source.charCodeAt(from) === 91 : kind !== operator && (kind !== keyword || !continuation.has(source.slice(from, to)) || named(at));
     const skip = (at: number) => {
       while (at >= 0 && tokens[3 * at] === comment) at--;
       return at;
@@ -169,6 +189,7 @@ export function trackFrames(spec: Spec) {
       const kind = tokens[3 * t], from = tokens[3 * t + 1], to = tokens[3 * t + 2], trivia = kind === comment;
       const word = words[kind]?.get(source.slice(from, to));
       let signal = 0, qmark = false;
+      if (!start && !trivia && last >= 0 && angles === 0 && (memberKinds >> frames[current].kind & 1 || frames[current].kind === objectKind && stack.length && stack[stack.length - 1][2] & aliasBit) && lineBreak(last, from) && completes(last) && begins(t, kind, from, to)) start = asi[t] = 1;
       atStart[t] = start;
       if (word) {
         if (word.marker !== undefined) { marker = word.marker; markerAt = where(); }
@@ -211,7 +232,7 @@ export function trackFrames(spec: Spec) {
     }
     return {
       tokens, token_types: input.token_types,
-      frames: { active_frame: active, at_start: atStart, frames, kind_names: kinds.kind_names, signals: spec.signals_enabled ? signals : new Uint8Array(), flag_names: spec.stmt_flag_names },
+      frames: { active_frame: active, at_start: atStart, asi, frames, kind_names: kinds.kind_names, signals: spec.signals_enabled ? signals : new Uint8Array(), flag_names: spec.stmt_flag_names },
     } as unknown as PackedTokens;
   };
 }

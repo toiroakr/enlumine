@@ -18,15 +18,14 @@ export const typeKeywords: Pass = (source, result) => {
       } else if (view.is(i, "identifier")) tokens[i * 3] = type;
     }
   };
-  for (let i = 0; i < view.count; i++) {
-    if (!view.is(i, "keyword")) continue;
+  for (const i of view.of("keyword")) {
     const text = view.text(i);
     if (text === "type") {
       const prev = view.prev(i - 1), name = view.next(i + 1);
-      if ((prev < 0 || view.is(prev, "keyword", "export", "declare") || view.is(prev, "punctuation") && /[;}]$/.test(view.text(prev))) && view.is(name, "identifier")) tokens[name * 3] = type;
+      if ((prev < 0 || view.hasAny(prev, "keyword", "export", "declare") || view.is(prev, "punctuation") && /[;}]$/.test(view.text(prev))) && view.is(name, "identifier")) tokens[name * 3] = type;
     } else if (text === "import" || text === "export") {
       const marker = view.next(i + 1), target = view.next(marker + 1);
-      if (!view.is(marker, "keyword", "type")) continue;
+      if (!view.has(marker, "keyword", "type")) continue;
       if (view.starts(target, "punctuation", "{")) retypeBraced(target);
       else if (view.is(target, "identifier")) tokens[target * 3] = type;
     }
@@ -35,7 +34,7 @@ export const typeKeywords: Pass = (source, result) => {
 };
 
 function nextLess(view: View, from: number) {
-  for (let i = from; i < view.count; i++) if (view.source[view.tokens[3 * i + 1]] === "<" && view.is(i, "operator", "<")) return i;
+  for (let i = from; i < view.count; i++) if (view.source[view.tokens[3 * i + 1]] === "<" && view.has(i, "operator", "<")) return i;
   return -1;
 }
 

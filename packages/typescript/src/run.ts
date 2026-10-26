@@ -1,4 +1,5 @@
 import type { PackedTokens } from "@enlumine/core";
+import { forgetLists } from "./claims.js";
 import type { Claim, Claims } from "./claims.js";
 
 type Stage = { __claim?: Claim } & ((...args: any[]) => any);
@@ -15,8 +16,10 @@ export function reclassify(stages: Stage[]) {
     let result: any = input;
     for (const step of plan) {
       if (!Array.isArray(step)) {
-        const frames = result.frames, length = result.tokens.length;
+        const frames = result.frames, length = result.tokens.length, before = result.tokens;
         result = step(source, result);
+        forgetLists(before);
+        forgetLists(result.tokens);
         if (result.frames === undefined && frames !== undefined && result.tokens.length === length)
           result = { tokens: result.tokens, token_types: result.token_types, overlays: result.overlays, frames };
         continue;

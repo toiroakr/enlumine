@@ -1,6 +1,8 @@
 import { claim, typeId, View } from "./claims.js";
+import { kindMask } from "./rules.js";
 import type { Frames } from "./rules.js";
 
+const softNames = ["type", "from", "of", "as", "get", "set", "async", "static", "readonly", "declare", "abstract", "accessor", "override", "module", "namespace"];
 const modifiers = ["get", "set", "async", "readonly", "public", "private", "protected", "static", "abstract", "override", "accessor", "declare"];
 
 export const parameters = claim((source, tokens, types, out, framesInput) => {
@@ -12,6 +14,7 @@ export const parameters = claim((source, tokens, types, out, framesInput) => {
   const view = new View(source, tokens, types), count = view.count, found: number[] = [];
   const isOperator = (i: number, text: string) => tokens[3 * i] === operator && view.text(i) === text;
   const prefix = (i: number) => tokens[3 * i] === operator ? view.text(i) === "..." : tokens[3 * i] === keyword && modifiers.includes(view.text(i));
+  const nameEnds = (next: number) => next >= 0 && (view.is(next, "punctuation") ? ":,)".includes(source[tokens[3 * next + 1]]) : view.hasAny(next, "operator", "=", "?", "?:"));
   const followedByName = (from: number) => {
     for (let i = view.next(from); i >= 0; i = view.next(i + 1)) if (tokens[3 * i] === identifier || !prefix(i)) return tokens[3 * i] === identifier;
     return false;
@@ -28,21 +31,33 @@ export const parameters = claim((source, tokens, types, out, framesInput) => {
     }
     return null;
   };
+  const binds = (t: number) => {
+    const before = view.prev(t - 1), after = view.next(t + 1);
+    return (view.is(before, "punctuation") && "{[,:".includes(source[tokens[3 * before + 2] - 1]) || view.has(before, "operator", "..."))
+      && (view.is(after, "punctuation") && ",}]".includes(source[tokens[3 * after + 1]]) || view.has(after, "operator", "="));
+  };
   const collect = (at: number, offset: number, strict: boolean) => {
-    let atStart = true, afterDefault = false;
+    let atStart = true, afterDefault = false, pattern = false;
     walk(at, offset, 1, (t, c, depth) => {
       if (c >= 0) {
         if (!depth) return true;
         if (c === 44 && depth === 1) atStart = true, afterDefault = false;
+        else if (depth === 2 && atStart && !afterDefault && (c === 123 || c === 91)) pattern = true, atStart = false;
+        else if (depth === 1) pattern = false;
+      } else if (depth > 1 && pattern) {
+        if (tokens[3 * t] === identifier && binds(t)) found.push(t);
       } else if (depth === 1 && atStart && !afterDefault) {
-        if (tokens[3 * t] === identifier) strict && (tokens[3 * view.next(t + 1)] === template || view.is(view.next(t + 1), "operator", "<")) || found.push(t), atStart = false;
+        if (tokens[3 * t] === identifier) strict && (tokens[3 * view.next(t + 1)] === template || view.has(view.next(t + 1), "operator", "<")) || found.push(t), atStart = false;
         else if (isOperator(t, "=")) atStart = false, afterDefault = true;
+        else if (tokens[3 * t] === keyword && softNames.includes(view.text(t)) && nameEnds(view.next(t + 1))) found.push(t), atStart = false;
         else if (!prefix(t) || !followedByName(t + 1)) atStart = false;
       }
     });
   };
+  let closeKey = -1, closeAt: [number, number] | null = null;
   const arrowParen = (anchor: number, offset: number, extended: boolean) => {
-    const close = walk(anchor, offset, 1, (_, __, depth) => !depth);
+    if (closeKey !== anchor * 4096 + offset) closeAt = walk(anchor, offset, 1, (_, __, depth) => !depth), closeKey = anchor * 4096 + offset;
+    const close = closeAt;
     if (!close) return false;
     const before = view.prev(anchor - 1), end = tokens[3 * close[0] + 2];
     const previous = offset > 0 ? source.charCodeAt(tokens[3 * anchor + 1] + offset - 1) : before >= 0 && tokens[3 * before] === punctuation ? source.charCodeAt(tokens[3 * before + 2] - 1) : -1;
@@ -69,7 +84,8 @@ export const parameters = claim((source, tokens, types, out, framesInput) => {
     collect(at, 0, false);
     return true;
   };
-  const member = (i: number) => !!frames && frames.at_start[i] === 1 && ["class", "object", "interface"].includes(frames.kind_names[frames.frames[frames.active_frame[i]].kind]);
+  const memberKinds = frames ? kindMask(frames, "class", "object", "interface") : 0;
+  const member = (i: number) => !!frames && frames.at_start[i] === 1 && (memberKinds >> frames.frames[frames.active_frame[i]].kind & 1) === 1;
   for (let w = 0; w < count; w++) {
     const kind = tokens[3 * w];
     if (view.trivia(w)) continue;
@@ -83,7 +99,7 @@ export const parameters = claim((source, tokens, types, out, framesInput) => {
       } else if (modifiers.includes(view.text(w)) && member(w)) matched = paramsFrom(w + 1);
     } else if (kind === identifier || kind === fn) {
       if (member(w)) matched = paramsFrom(w + 1);
-      if (!matched && isOperator(view.next(w + 1), "=>")) { out.emit(w, parameter, 15); continue; }
+      if (!matched && isOperator(view.next(w + 1), "=>") && !view.has(view.prev(w - 1), "keyword", "typeof")) { out.emit(w, parameter, 15); continue; }
     } else if (kind === punctuation && frames) {
       const start = tokens[3 * w + 1], length = tokens[3 * w + 2] - start;
       let paren = false;
