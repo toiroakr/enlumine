@@ -13,4 +13,6 @@ const packed = sql("SELECT 42;");
 const lines = highlightSqlLines(["SELECT 42;"], styles);
 ```
 
+Import `@enlumine/sql/postgresql` and `@enlumine/sql/postgresql/editor` to apply only PostgreSQL's quoting rules; the default entries accept the quoting of every supported dialect.
+
 See the [project documentation](https://github.com/toiroakr/enlumine#readme) for API details, language limits, CLI options, and independent package usage. Third-party notices are included in `THIRD_PARTY_NOTICES.txt`.

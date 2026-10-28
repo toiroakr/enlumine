@@ -100,6 +100,19 @@ Each function takes a readonly array of complete editor lines and returns one de
 
 The editor APIs are tolerant display helpers. They do not validate complete documents or retain state between calls. ANSI output may change when token classification improves.
 
+## Pick one SQL dialect
+
+`@enlumine/sql` and `@enlumine/sql/editor` accept the quoting of every supported dialect at once: a backslash escapes inside `'...'`, `[name]` and `` `name` `` quote identifiers, and `#` starts a comment. A dialect entry applies only its own rules, and a bundler includes only the dialect you import.
+
+```ts
+import { highlightSqlLines } from "@enlumine/sql/postgresql/editor";
+import sqlStyles from "@enlumine/sql/themes/ansi";
+
+highlightSqlLines(["SELECT replace(path, '\\', '/'), ARRAY['a', 'b']"], sqlStyles);
+```
+
+PostgreSQL differs in four ways: a backslash inside `'...'` is an ordinary character (`E'...'` strings still use backslash escapes), `[` and `]` are brackets, `#` is an operator, and a backtick does not quote an identifier. The dialect entries take the same arguments and return the same shapes as the default ones.
+
 ## Scan GraphQL fragments
 
 ```ts

@@ -12,6 +12,14 @@
       "types": "./dist/editor.d.ts",
       "import": "./dist/editor.js"
     },
+    "./postgresql": {
+      "types": "./dist/postgresql/index.d.ts",
+      "import": "./dist/postgresql/index.js"
+    },
+    "./postgresql/editor": {
+      "types": "./dist/postgresql/editor.d.ts",
+      "import": "./dist/postgresql/editor.js"
+    },
     "./themes/ansi": {
       "types": "./dist/themes/ansi.d.ts",
       "import": "./dist/themes/ansi.js"

@@ -38,6 +38,12 @@
       "@enlumine/sql/editor": [
         "./packages/sql/src/editor.ts"
       ],
+      "@enlumine/sql/postgresql": [
+        "./packages/sql/src/postgresql/index.ts"
+      ],
+      "@enlumine/sql/postgresql/editor": [
+        "./packages/sql/src/postgresql/editor.ts"
+      ],
       "@enlumine/graphql/editor": [
         "./packages/graphql/src/editor.ts"
       ],

@@ -480,7 +480,7 @@ const types = spawnSync(process.execPath, [resolve(root, "node_modules/typescrip
 if (types.status !== 0) process.exit(types.status ?? 1);
 const metadata = {};
 for (const name of packages) {
-  const entries = name==="sql"?{shared:"enlumine:sql-package"}:{index:`packages/${name}/src/index.ts`};
+  const entries = name==="sql"?{shared:"enlumine:sql-package","postgresql/index":"packages/sql/src/postgresql/index.ts","postgresql/editor":"packages/sql/src/postgresql/editor.ts"}:{index:`packages/${name}/src/index.ts`};
   if (name === "terminal") for (const theme of ["dark", "light", "ansi"])
     entries[`themes/${theme}`] = `packages/terminal/src/themes/${theme}.ts`;
   if (name === "enlumine") entries.cli = `packages/${name}/src/cli.ts`;
@@ -539,7 +539,7 @@ for (const name of packages) {
   }
   const declarations = name === "core" ? ["index", "core", "unpack", "tokens"]
     : name === "enlumine" ? ["index", "lexer", "languages"] : name === "graphql" ? ["index", "lexical", "editor", "themes/ansi"]
-    : name === "sql" ? ["index", "lexical", "editor", "themes/ansi"]
+    : name === "sql" ? ["index", "lexical", "lexer", "highlighter", "editor", "themes/ansi", "postgresql/index", "postgresql/lexical", "postgresql/editor"]
     : name === "terminal" ? ["index", "types", "themes/dark", "themes/light", "themes/ansi"] : ["index"];
   for (const entry of declarations)
     await copyFile(resolve(generated, "types", name, "src", `${entry}.d.ts`),

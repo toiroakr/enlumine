@@ -40,12 +40,18 @@ try {
     import * as sqlModule from '@enlumine/sql';
     import * as sqlEditorModule from '@enlumine/sql/editor';
     import {highlightSqlLines} from '@enlumine/sql/editor';
+    import * as postgresqlModule from '@enlumine/sql/postgresql';
+    import * as postgresqlEditorModule from '@enlumine/sql/postgresql/editor';
+    import {highlightSqlLines as highlightPostgresqlLines} from '@enlumine/sql/postgresql/editor';
     import {highlightGraphqlLines} from '@enlumine/graphql/editor';
     import sqlStyles from '@enlumine/sql/themes/ansi';
     import graphqlStyles from '@enlumine/graphql/themes/ansi';
     import {tokenizeLexically} from '@enlumine/graphql/lexical';
     assert.deepEqual(Object.keys(sqlModule),['default']);
     assert.deepEqual(Object.keys(sqlEditorModule),['highlightSqlLines']);
+    assert.deepEqual(Object.keys(postgresqlModule),['default']);
+    assert.deepEqual(Object.keys(postgresqlEditorModule),['highlightSqlLines']);
+    assert.equal(highlightPostgresqlLines(["SELECT '\\\\'", 'FROM t'], {string:'\\x1b[32m'})[1], 'FROM t');
     const sql = highlightSqlLines(['SELECT 1 /* comment', 'end */'], {keyword:'\\x1b[34m',comment:'\\x1b[90m'});
     assert.ok(sql[0].includes('\\x1b[34mSELECT\\x1b[0m'));
     assert.equal(sql[1], '\\x1b[90mend */\\x1b[0m');
@@ -61,12 +67,16 @@ try {
   run(process.execPath, ["--input-type=module", "-e", minimalSource], minimal);
   await writeFile(resolve(minimal, "consumer.mts"), `
     import {highlightSqlLines, type SqlStyles} from '@enlumine/sql/editor';
+    import postgresql from '@enlumine/sql/postgresql';
+    import {highlightSqlLines as highlightPostgresqlLines} from '@enlumine/sql/postgresql/editor';
     import {highlightGraphqlLines, type GraphqlStyles} from '@enlumine/graphql/editor';
     import sqlTheme from '@enlumine/sql/themes/ansi';
     import graphqlTheme from '@enlumine/graphql/themes/ansi';
     const sql: SqlStyles = {keyword:'\\x1b[34m'};
     const graphql: GraphqlStyles = {string:'\\x1b[32m'};
     highlightSqlLines(['SELECT 1'], sql);
+    highlightPostgresqlLines(['SELECT 1'], sql);
+    postgresql('SELECT 1').tokens.slice();
     highlightGraphqlLines(['field'], graphql);
     highlightSqlLines(['SELECT 1'], sqlTheme);
     highlightGraphqlLines(['field'], graphqlTheme);
