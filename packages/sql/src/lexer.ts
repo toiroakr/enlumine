@@ -4,13 +4,14 @@ export interface Dialect {
   quotes: string;
   punctuation: string;
   backslash: boolean;
+  escapePrefix: string;
   hash: boolean;
 }
-const enum Escape { None, Backslash, Postgres }
+const enum Escape { None, Backslash, Sequences }
 let scratch = new Uint32Array(4096);
 const stringBody = /[^'\\]+/y;
 const plainBody = /[^']+/y;
-const pgEscape = /\\(?:x[\da-fA-F]{0,2}|u[\da-fA-F]{0,4}|U[\da-fA-F]{0,8}|[0-7]{1,3}|[\s\S]?)/y;
+const escapeSequence = /\\(?:x[\da-fA-F]{0,2}|u[\da-fA-F]{0,4}|U[\da-fA-F]{0,8}|[0-7]{1,3}|[\s\S]?)/y;
 const wordTypes = [Kind.Boolean, Kind.Type, Kind.Keyword];
 const words = new Map<string, number>();
 for (let group = 0; group < wordGroups.length; group++)
@@ -56,10 +57,10 @@ function lex(source: string, dialect: Dialect): Uint32Array {
         }
       }
       else if (kind === Kind.String && escape && source[cursor] === "\\") {
-        if (escape === Escape.Postgres) {
-          pgEscape.lastIndex = cursor;
-          const escape = pgEscape.exec(source)![0];
-          cursor = pgEscape.lastIndex;
+        if (escape === Escape.Sequences) {
+          escapeSequence.lastIndex = cursor;
+          const escape = escapeSequence.exec(source)![0];
+          cursor = escapeSequence.lastIndex;
           emit(Kind.StringEscape, begin, cursor, escape.length > 1 && "xuU".includes(escape[1]));
         }
         else {
@@ -95,7 +96,7 @@ function lex(source: string, dialect: Dialect): Uint32Array {
       if (next === "'" && "eEnNbBxX".includes(source[start])) {
         emit(Kind.Identifier, start, start + 1);
         position = quoted(start + 1, start + 2, "bBxX".includes(source[start]) ? Kind.Bit : Kind.String,
-          "eE".includes(source[start]) ? Escape.Postgres : dialect.backslash ? Escape.Backslash : Escape.None);
+          dialect.escapePrefix.includes(source[start]) ? Escape.Sequences : dialect.backslash ? Escape.Backslash : Escape.None);
         continue;
       }
       if ((first === 85 || first === 117) && next === "&" && (source[start + 2] === "'" || source[start + 2] === '"')) {

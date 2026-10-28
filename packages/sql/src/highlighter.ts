@@ -40,8 +40,6 @@ function quoteEnd(line: string, from: number, quote: string, escapes: boolean): 
   return -1;
 }
 
-const escapedString = /(?:^|[^\w$])[eE]$/;
-
 export function createHighlighter(tokenizeTokens: (source: string) => Uint32Array, dialect: Dialect) {
   const markers = new RegExp(`\\/\\*|--${dialect.hash ? "|#(?!>)" : ""}|\\$(?:[A-Z_]\\w*)?\\$|['${dialect.quotes.replace(/[\]\\^-]/g, "\\$&")}]`, "gi");
   return function highlightSqlLines(lines: readonly string[], styles: SqlStyles): string[] {
@@ -85,7 +83,8 @@ export function createHighlighter(tokenizeTokens: (source: string) => Uint32Arra
           } else if (text === "--" || text === "#") emit(line.length, styles.comment);
           else {
             const quote = text === "[" ? "]" : text;
-            const escapes = text === "'" && (dialect.backslash || escapedString.test(line.slice(0, i)));
+            const escapes = text === "'" && (dialect.backslash ||
+              (i > 0 && dialect.escapePrefix.includes(line[i - 1]) && !/[\w$]/.test(line[i - 2] ?? "")));
             const close = text.length === 1 ? quoteEnd(line, i + 1, quote, escapes) : line.indexOf(text, i + text.length);
             const end = close < 0 ? line.length : close + (text.length === 1 ? 0 : text.length);
             if (text.length === 1) {
