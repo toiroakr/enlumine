@@ -158,7 +158,7 @@ Core contains no language data, ANSI rendering, or upstream reclassification hel
 
 `pnpm test:compatibility` runs the focused tokenizer comparisons. `pnpm test:highlight-lines` runs line-highlighting tests. Tests establish behavior for the checked inputs, not complete language correctness.
 
-`pnpm size:check` bundles all 15 nonempty combinations of the four language tokenizers with identical esbuild options. Both minified and gzip bytes must be smaller than the pinned twinkleplop public default APIs. It also checks packed results on every prefix of four language snippets; TypeScript results may differ from upstream only by the same allowed improvements. Results are written to `.generated/size-floor/results.json`.
+`pnpm size:check` bundles all 15 nonempty combinations of the four language tokenizers with identical rolldown options (the minify settings of the SDK build: mangle with `keepNames`). Both minified and gzip bytes must be smaller than the pinned twinkleplop public default APIs. It also checks packed results on every prefix of four language snippets; TypeScript results may differ from upstream only by the same allowed improvements. Results are written to `.generated/size-floor/results.json`.
 
 `pnpm size` reports the sum of published JavaScript file sizes and per-file gzip sizes. These exclude declarations, notices, and dependency packages and are distinct from application bundle sizes.
 

@@ -50,6 +50,10 @@ test("PostgreSQL treats [ and ] as punctuation instead of a quoted identifier", 
   ]);
 });
 
+test("a numbered parameter is not mistaken for a dollar-quote tag", () => {
+  assert.deepEqual(spans(postgresql, "$1, $2"), [["variable", "$1"], ["punctuation", ","], ["variable", "$2"]]);
+});
+
 test("PostgreSQL treats # as an operator instead of a line comment", () => {
   assert.deepEqual(spans(postgresql, "a # b"), [["identifier", "a"], ["operator", "#"], ["identifier", "b"]]);
 });
