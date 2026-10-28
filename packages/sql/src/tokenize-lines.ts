@@ -38,7 +38,7 @@ function quoteEnd(line: string, from: number, quote: string, escapes: boolean): 
 }
 
 export function createLineTokenizer(tokenizeTokens: (source: string) => Uint32Array, dialect: Dialect) {
-  const markers = new RegExp(`\\/\\*|--${dialect.hash ? "|#(?!>)" : ""}|\\$(?:[A-Z_]\\w*)?\\$|['${dialect.quotes.replace(/[\]\\^-]/g, "\\$&")}]`, "gi");
+  const markers = new RegExp(`\\/\\*|--${dialect.hash ? "|#(?!>)" : ""}|\\$(?:[A-Z_]\\w*)?\\$|['${dialect.quotes}]`, "gi");
   return function tokenizeLines(lines: readonly string[]): PackedTokens[] {
     const names: string[] = [];
     let depth = 0, delimiter = "", literalEscapes = false;

@@ -1,5 +1,6 @@
 import ansi from "../packages/terminal/dist/themes/ansi.js";
 import {test} from "node:test";
+import {build} from "esbuild";
 import assert from "node:assert/strict";
 
 import {highlightLines} from "../packages/terminal/dist/index.js";
@@ -132,4 +133,13 @@ test("GraphQL aliases select fields while schema colons still introduce types",(
   assert.ok(query.includes("\x1b[94muser\x1b[0m"));
   const schema=highlightGraphqlLines(['type Query { user: User }'],ansi)[0];
   assert.ok(schema.includes("\x1b[36mUser\x1b[0m"));
+});
+
+test("a bundle that imports only the SQL styles does not carry the GraphQL styles",async()=>{
+  const bundle=async name=>(await build({
+    stdin:{contents:`export {${name}} from ${JSON.stringify(new URL("../packages/terminal/dist/themes/ansi.js",import.meta.url).pathname)};`,resolveDir:"/"},
+    bundle:true,write:false,minify:true,format:"esm",platform:"node",target:"node22",
+  })).outputFiles[0].text;
+  assert.ok((await bundle("graphql")).includes("brace"));
+  assert.ok(!(await bundle("sql")).includes("brace"));
 });
