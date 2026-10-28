@@ -1,6 +1,7 @@
 import type { PackedTokens } from "./core.js";
 
 export type Tokenizer = (source: string) => PackedTokens;
+export type LinesTokenizer = (lines: readonly string[]) => PackedTokens[];
 export type TokenKind = string;
 export interface Token {
   kind: TokenKind;

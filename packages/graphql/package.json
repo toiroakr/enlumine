@@ -11,14 +11,6 @@
     "./lexical": {
       "types": "./dist/lexical.d.ts",
       "import": "./dist/lexical.js"
-    },
-    "./editor": {
-      "types": "./dist/editor.d.ts",
-      "import": "./dist/editor.js"
-    },
-    "./themes/ansi": {
-      "types": "./dist/themes/ansi.d.ts",
-      "import": "./dist/themes/ansi.js"
     }
   },
   "types": "./dist/index.d.ts",

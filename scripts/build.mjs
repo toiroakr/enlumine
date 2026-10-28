@@ -69,8 +69,7 @@ const plugin = {
     build.onLoad({filter:/.*/,namespace:"enlumine-typescript-frames"},async()=>({contents:await typescriptFrameData(),loader:"ts",resolveDir:root}));
     build.onResolve({filter:/^enlumine:sql-package$/},()=>({path:"package",namespace:"enlumine-sql-package"}));
     build.onLoad({filter:/.*/,namespace:"enlumine-sql-package"},()=>({
-      contents:`export {default} from ${JSON.stringify(resolve(root,"packages/sql/src/index.ts"))};
-        export {highlightSqlLines} from ${JSON.stringify(resolve(root,"packages/sql/src/editor.ts"))};`,
+      contents:`export {default,tokenizeLines} from ${JSON.stringify(resolve(root,"packages/sql/src/index.ts"))};`,
       loader:"ts",resolveDir:root,
     }));
     build.onResolve({filter:/^enlumine:sql-lexical-data$/},()=>({path:"data",namespace:"enlumine-sql-data"}));
@@ -480,14 +479,10 @@ const types = spawnSync(process.execPath, [resolve(root, "node_modules/typescrip
 if (types.status !== 0) process.exit(types.status ?? 1);
 const metadata = {};
 for (const name of packages) {
-  const entries = name==="sql"?{shared:"enlumine:sql-package","postgresql/index":"packages/sql/src/postgresql/index.ts","postgresql/editor":"packages/sql/src/postgresql/editor.ts"}:{index:`packages/${name}/src/index.ts`};
+  const entries = name==="sql"?{shared:"enlumine:sql-package","postgresql/index":"packages/sql/src/postgresql/index.ts"}:{index:`packages/${name}/src/index.ts`};
   if (name === "terminal") for (const theme of ["dark", "light", "ansi"])
     entries[`themes/${theme}`] = `packages/terminal/src/themes/${theme}.ts`;
   if (name === "enlumine") entries.cli = `packages/${name}/src/cli.ts`;
-  if (name === "sql" || name === "graphql") {
-    if(name!=="sql")entries.editor = `packages/${name}/src/editor.ts`;
-    entries["themes/ansi"] = `packages/${name}/src/themes/ansi.ts`;
-  }
   if (name === "graphql") entries.lexical = "packages/graphql/src/lexical.ts";
   const result = await build({
     absWorkingDir: root,
@@ -511,7 +506,7 @@ for (const name of packages) {
   metadata[name] = result.metafile;
   metadata[name].enlumine = {minifier: sizeBaseline ? "esbuild" : "esbuild + terser", inputAttribution: "esbuild output before final compression", grammarOrder:[],...(name==="sql"&&!genericSql?{lexical:sqlLexicalMetadata}:name==="json"?{lexical:jsonLexicalMetadata}:name==="typescript"?{dedicated:typescriptMetadata}:{})};
   const manifest = JSON.parse(await readFile(resolve(root, "packages", name, "package.json"), "utf8"));
-  if(name==="sql")for(const [entry,exports] of [["index",["default"]],["editor",["highlightSqlLines"]]]) {
+  if(name==="sql")for(const [entry,exports] of [["index",["default","tokenizeLines"]]]) {
     const path=resolve(outputRoot,"packages/sql/dist",`${entry}.js`);
     const code=`export{${exports.join(",")}}from"./shared.js";\n`;
     await writeFile(path,code);
@@ -538,8 +533,8 @@ for (const name of packages) {
     }
   }
   const declarations = name === "core" ? ["index", "core", "unpack", "tokens"]
-    : name === "enlumine" ? ["index", "lexer", "languages"] : name === "graphql" ? ["index", "lexical", "editor", "themes/ansi"]
-    : name === "sql" ? ["index", "lexical", "lexer", "highlighter", "editor", "themes/ansi", "postgresql/index", "postgresql/lexical", "postgresql/editor"]
+    : name === "enlumine" ? ["index", "lexer", "languages"] : name === "graphql" ? ["index", "lexical", "scan-lexically", "tokenize-lines"]
+    : name === "sql" ? ["index", "lexical", "lexer", "lines", "postgresql/index", "postgresql/lexical", "postgresql/lines"]
     : name === "terminal" ? ["index", "types", "themes/dark", "themes/light", "themes/ansi"] : ["index"];
   for (const entry of declarations)
     await copyFile(resolve(generated, "types", name, "src", `${entry}.d.ts`),

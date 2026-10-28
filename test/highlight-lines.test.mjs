@@ -2,10 +2,11 @@ import ansi from "../packages/terminal/dist/themes/ansi.js";
 import {test} from "node:test";
 import assert from "node:assert/strict";
 
-import {highlightSqlLines as sqlLines} from "../packages/sql/dist/editor.js";
-import {highlightGraphqlLines as graphqlLines} from "../packages/graphql/dist/editor.js";
-const highlightSqlLines = (lines, theme) => sqlLines(lines, theme.sql);
-const highlightGraphqlLines = (lines, theme) => graphqlLines(lines, theme.graphql);
+import {highlightLines} from "../packages/terminal/dist/index.js";
+import {tokenizeLines as sqlLines} from "../packages/sql/dist/index.js";
+import {tokenizeLines as graphqlLines} from "../packages/graphql/dist/lexical.js";
+const highlightSqlLines = (lines, theme) => highlightLines(lines, {tokenizeLines: sqlLines, styles: theme.sql});
+const highlightGraphqlLines = (lines, theme) => highlightLines(lines, {tokenizeLines: graphqlLines, styles: theme.graphql});
 const strip=source=>source.replace(/\x1b\[[\d;]*m/g,"");
 
 test("GraphQL argument colors survive unmatched closing parentheses and continue across lines",()=>{
@@ -16,14 +17,14 @@ test("GraphQL argument colors survive unmatched closing parentheses and continue
   for(const index of [1,2,4])assert.ok(output[index].includes("\x1b[3;33margument\x1b[0m"));
 });
 
-test("editor distinguishes SQL keywords and GraphQL fields, arguments, variables, and types",()=>{
+test("line highlighting distinguishes SQL keywords and GraphQL fields, arguments, variables, and types",()=>{
   const sql=highlightSqlLines(["SELECT id FROM users WHERE id = 1"], ansi)[0];
   for(const expected of ["\x1b[34mSELECT\x1b[0m","\x1b[33mid\x1b[0m","\x1b[33musers\x1b[0m","\x1b[36m1\x1b[0m"])assert.ok(sql.includes(expected));
   const graphql=highlightGraphqlLines(["user(id: ID!, active: $flag)"], ansi)[0];
   for(const expected of ["\x1b[94muser\x1b[0m","\x1b[3;33mid\x1b[0m","\x1b[36mID\x1b[0m","\x1b[35m$\x1b[0m","\x1b[35mflag\x1b[0m"])assert.ok(graphql.includes(expected));
 });
 
-test("editor colors unfinished GraphQL strings and preserves colors before incomplete input",()=>{
+test("line highlighting colors unfinished GraphQL strings and preserves colors before incomplete input",()=>{
   for(const text of ['unfinished','ends with \\', 'bad \\u', 'comment # inside']) {
     const source='query Q { user(name: "'+text;
     const output=highlightGraphqlLines([source], ansi)[0];
@@ -35,7 +36,7 @@ test("editor colors unfinished GraphQL strings and preserves colors before incom
   assert.ok(highlightGraphqlLines([source], ansi)[0].includes("\x1b[34mquery\x1b[0m"));
 });
 
-test("editor colors inline comments and carries nested comments and block strings across lines",()=>{
+test("line highlighting colors inline comments and carries nested comments and block strings across lines",()=>{
   const sql=["SELECT 1 /* outer", "/* nested */ continuation", "*/ FROM users -- note"];
   const sqlOutput=highlightSqlLines(sql, ansi);
   assert.deepEqual(sqlOutput.map(strip),sql);
@@ -49,7 +50,7 @@ test("editor colors inline comments and carries nested comments and block string
   assert.ok(output[2].includes("\x1b[3;33mb\x1b[0m"));
 });
 
-test("editor treats tagged SQL dollar quotes as strings without changing comment state",()=>{
+test("line highlighting treats tagged SQL dollar quotes as strings without changing comment state",()=>{
   const lines=['SELECT $body$/* text */$body$ AS value', 'FROM users'];
   const output=highlightSqlLines(lines, ansi);
   assert.deepEqual(output.map(strip),lines);

@@ -7,7 +7,7 @@
     "build": "node scripts/build.mjs",
     "check": "tsc --noEmit",
     "test": "pnpm build && node --test test/*.test.mjs && node scripts/check-bundle-sizes.mjs",
-    "test:editor": "pnpm build && node --test test/editor.test.mjs",
+    "test:highlight-lines": "pnpm build && node --test test/highlight-lines.test.mjs",
     "test:compatibility": "pnpm build && node --test test/compatibility.test.mjs test/json.test.mjs test/sql.test.mjs test/graphql-lexical.test.mjs",
     "smoke:packages": "pnpm build && node scripts/smoke-packages.mjs",
     "size": "pnpm build && node scripts/size.mjs",

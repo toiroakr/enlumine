@@ -53,7 +53,7 @@ Custom themes map token kinds to six-digit hex colors. Unconfigured kinds use th
 
 - `@enlumine/terminal/themes/dark`
 - `@enlumine/terminal/themes/light`
-- `@enlumine/terminal/themes/ansi`
+- `@enlumine/terminal/themes/ansi` (ANSI style strings for `highlightLines`, not hex colors)
 
 Colored lines reset their foreground before LF, CRLF, lone CR, or the end of input. Unicode, tabs, and final newline status are preserved. Other terminal controls are rendered visibly; for example, ESC becomes `\x1b`.
 
@@ -80,38 +80,39 @@ The terminal renderer imports no language or theme data. Pass a language tokeniz
 
 Each language's default export returns owned packed triples `[typeId, start, end, ...]` in a `Uint32Array`, with a `token_types` name table. Whitespace gaps may be omitted. `core.tokenize(source, tokenizer)` normalizes these into contiguous ranges.
 
-## Render editor lines
+## Highlight lines
 
-SQL and GraphQL export line-oriented rendering directly from their language packages:
+SQL and GraphQL tokenize a list of lines, and the terminal package colors them:
 
 ```ts
-import { highlightSqlLines } from "@enlumine/sql/editor";
-import { highlightGraphqlLines } from "@enlumine/graphql/editor";
-import sqlStyles from "@enlumine/sql/themes/ansi";
-import graphqlStyles from "@enlumine/graphql/themes/ansi";
+import { highlightLines } from "@enlumine/terminal";
+import ansi from "@enlumine/terminal/themes/ansi";
+import { tokenizeLines as sqlLines } from "@enlumine/sql";
+import { tokenizeLines as graphqlLines } from "@enlumine/graphql/lexical";
 
-highlightSqlLines(["SELECT 1 /* comment", "end */ FROM users;"], sqlStyles);
-highlightGraphqlLines(['query { field(arg: "unfinished'], graphqlStyles);
+highlightLines(["SELECT 1 /* comment", "end */ FROM users;"], { tokenizeLines: sqlLines, styles: ansi.sql });
+highlightLines(['query { field(arg: "unfinished'], { tokenizeLines: graphqlLines, styles: ansi.graphql });
 ```
 
-These APIs need only core and the selected language packages. They do not load the convenience package, terminal renderer, JSON, TypeScript, or document grammars. Theme entries contain only ANSI style strings and can be replaced with custom readonly style maps. The functions are also re-exported by `enlumine`.
+`tokenizeLines(lines)` takes a readonly array of complete editor lines and returns one packed token table per line, in the same `[typeId, start, end, ...]` form as a tokenizer. Every call recomputes state from the supplied buffer, so nested SQL comments, quoted strings, quoted identifiers, dollar strings, and GraphQL block strings carry across lines. Unfinished GraphQL strings and valid prefixes remain classified. GraphQL classification distinguishes fields, aliases, arguments, variables, fragment type conditions, and variable list types in their respective contexts. The tokenizers contain no color codes and need only core.
 
-Each function takes a readonly array of complete editor lines and returns one decorated string per input line. Every call recomputes state from the supplied buffer. Rendering preserves nested SQL comments, quoted strings, quoted identifiers, dollar strings, and GraphQL block strings across lines. Unfinished GraphQL strings and valid prefixes remain colored. GraphQL classification distinguishes fields, aliases, arguments, variables, fragment type conditions, and variable list types in their respective contexts.
+`highlightLines(lines, { tokenizeLines, styles })` returns one decorated string per input line. `styles` maps a token kind to an ANSI escape string; kinds without an entry stay uncolored. Besides the kinds of the language, SQL reports `special` for text outside any token and `bracket` for `()[]{}`, and GraphQL reports kinds such as `definition`, `parameter`, `decorator`, and `brace`. The `@enlumine/terminal/themes/ansi` entry holds ready-made `sql` and `graphql` style maps; custom readonly maps work too. `highlightLines` is also re-exported by `enlumine`.
 
-The editor APIs are tolerant display helpers. They do not validate complete documents or retain state between calls. ANSI output may change when token classification improves.
+These APIs are tolerant display helpers. They do not validate complete documents or retain state between calls. ANSI output may change when token classification improves.
 
 ## Pick one SQL dialect
 
-`@enlumine/sql` and `@enlumine/sql/editor` accept the quoting of every supported dialect at once: a backslash escapes inside `'...'`, `[name]` and `` `name` `` quote identifiers, and `#` starts a comment. A dialect entry applies only its own rules, and a bundler includes only the dialect you import.
+`@enlumine/sql` accepts the quoting of every supported dialect at once: a backslash escapes inside `'...'`, `[name]` and `` `name` `` quote identifiers, and `#` starts a comment. A dialect entry applies only its own rules, and a bundler includes only the dialect you import.
 
 ```ts
-import { highlightSqlLines } from "@enlumine/sql/postgresql/editor";
-import sqlStyles from "@enlumine/sql/themes/ansi";
+import { highlightLines } from "@enlumine/terminal";
+import ansi from "@enlumine/terminal/themes/ansi";
+import { tokenizeLines } from "@enlumine/sql/postgresql";
 
-highlightSqlLines(["SELECT replace(path, '\\', '/'), ARRAY['a', 'b']"], sqlStyles);
+highlightLines(["SELECT replace(path, '\\', '/'), ARRAY['a', 'b']"], { tokenizeLines, styles: ansi.sql });
 ```
 
-PostgreSQL differs in four ways: a backslash inside `'...'` is an ordinary character (`E'...'` strings still use backslash escapes), `[` and `]` are brackets, `#` is an operator, and a backtick does not quote an identifier. The dialect entries take the same arguments and return the same shapes as the default ones.
+PostgreSQL differs in four ways: a backslash inside `'...'` is an ordinary character (`E'...'` strings still use backslash escapes), `[` and `]` are brackets, `#` is an operator, and a backtick does not quote an identifier. The dialect entries export the same `default` and `tokenizeLines` as `@enlumine/sql`.
 
 ## Scan GraphQL fragments
 
@@ -147,7 +148,7 @@ The packaged executable is named `enlumine`. It reads one file or standard input
 
 Pinned twinkleplop packages are development dependencies. Build adapters prepare TypeScript and GraphQL grammars as compressed tables. TypeScript replaces the upstream general-purpose reclassification engine with a TypeScript-specific implementation, and keeps the JavaScript, TypeScript, CSS, HTML, and JSDoc grammar data it needs for embedded regions. Scope-tracking specifications are compiled at build time, stripped of unused compiler-only fields, and pooled with grammar data; internal property names are shortened by the build.
 
-JSON and SQL use specialized lexical scanners checked against pinned upstream grammar signatures. SQL vocabulary, operators, probes, and token IDs come from the upstream module. Its vocabulary is emitted as plain strings, so SQL and the SQL/GraphQL editor entries do not load `node:zlib` or decompress data during import. The TypeScript and GraphQL document entries use Node's built-in Brotli decoder.
+JSON and SQL use specialized lexical scanners checked against pinned upstream grammar signatures. SQL vocabulary, operators, probes, and token IDs come from the upstream module. Its vocabulary is emitted as plain strings, so SQL and the SQL/GraphQL line tokenizers do not load `node:zlib` or decompress data during import. The TypeScript and GraphQL document entries use Node's built-in Brotli decoder.
 
 Core contains no language data, ANSI rendering, or upstream reclassification helpers. Language packages bundle their own classification helpers to support independent installation. Distributed packages do not require twinkleplop or compile grammars at runtime. Build adapters are specific to the pinned upstream versions and must be reverified on upgrades.
 
@@ -155,7 +156,7 @@ Core contains no language data, ANSI rendering, or upstream reclassification hel
 
 `pnpm test` builds the packages, runs unit and differential tests, and checks bundle sizes. Tests compare token ranges and name tables with the pinned npm tokenizers; for TypeScript, the only allowed differences are the classification improvements listed in `scripts/token-tables.mjs`. They cover incomplete and malformed input, Unicode, ownership of returned arrays, editor context, and configurable rendering.
 
-`pnpm test:compatibility` runs the focused tokenizer comparisons. `pnpm test:editor` runs line-rendering tests. Tests establish behavior for the checked inputs, not complete language correctness.
+`pnpm test:compatibility` runs the focused tokenizer comparisons. `pnpm test:highlight-lines` runs line-highlighting tests. Tests establish behavior for the checked inputs, not complete language correctness.
 
 `pnpm size:check` bundles all 15 nonempty combinations of the four language tokenizers with identical esbuild options. Both minified and gzip bytes must be smaller than the pinned twinkleplop public default APIs. It also checks packed results on every prefix of four language snippets; TypeScript results may differ from upstream only by the same allowed improvements. Results are written to `.generated/size-floor/results.json`.
 

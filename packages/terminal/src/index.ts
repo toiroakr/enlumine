@@ -1,8 +1,8 @@
 import { normalizeTokenKind } from "@enlumine/core";
 import type { TokenKind, Tokenizer } from "@enlumine/core";
 
-export type { ColorLevel, Theme, HighlightOptions, EditorTheme } from './types.js';
-import type { ColorLevel, Theme, HighlightOptions } from './types.js';
+export type { ColorLevel, Theme, HighlightOptions, HighlightLinesOptions, LineStyles, LineTheme } from './types.js';
+import type { ColorLevel, Theme, HighlightOptions, HighlightLinesOptions } from './types.js';
 
 const ansiPalette = [
   [0, 0, 0],
@@ -169,4 +169,19 @@ export function highlight(source: string, options: HighlightOptions): string {
   }
   if (active) output += "\x1b[39m";
   return output;
+}
+
+export function highlightLines(lines: readonly string[], options: HighlightLinesOptions): string[] {
+  const { styles } = options;
+  return options.tokenizeLines(lines).map(({ tokens, token_types }, row) => {
+    const line = lines[row];
+    let output = "", cursor = 0;
+    for (let i = 0; i < tokens.length; i += 3) {
+      const start = tokens[i + 1], end = tokens[i + 2], style = styles[token_types[tokens[i]]];
+      output += line.slice(cursor, start);
+      output += style ? style + line.slice(start, end) + "\x1b[0m" : line.slice(start, end);
+      cursor = end;
+    }
+    return output + line.slice(cursor);
+  });
 }

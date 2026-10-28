@@ -38,27 +38,17 @@ try {
   const minimalSource = `
     import assert from 'node:assert/strict';
     import * as sqlModule from '@enlumine/sql';
-    import * as sqlEditorModule from '@enlumine/sql/editor';
-    import {highlightSqlLines} from '@enlumine/sql/editor';
+    import {tokenizeLines as sqlLines} from '@enlumine/sql';
     import * as postgresqlModule from '@enlumine/sql/postgresql';
-    import * as postgresqlEditorModule from '@enlumine/sql/postgresql/editor';
-    import {highlightSqlLines as highlightPostgresqlLines} from '@enlumine/sql/postgresql/editor';
-    import {highlightGraphqlLines} from '@enlumine/graphql/editor';
-    import sqlStyles from '@enlumine/sql/themes/ansi';
-    import graphqlStyles from '@enlumine/graphql/themes/ansi';
-    import {tokenizeLexically} from '@enlumine/graphql/lexical';
-    assert.deepEqual(Object.keys(sqlModule),['default']);
-    assert.deepEqual(Object.keys(sqlEditorModule),['highlightSqlLines']);
-    assert.deepEqual(Object.keys(postgresqlModule),['default']);
-    assert.deepEqual(Object.keys(postgresqlEditorModule),['highlightSqlLines']);
-    assert.equal(highlightPostgresqlLines(["SELECT '\\\\'", 'FROM t'], {string:'\\x1b[32m'})[1], 'FROM t');
-    const sql = highlightSqlLines(['SELECT 1 /* comment', 'end */'], {keyword:'\\x1b[34m',comment:'\\x1b[90m'});
-    assert.ok(sql[0].includes('\\x1b[34mSELECT\\x1b[0m'));
-    assert.equal(sql[1], '\\x1b[90mend */\\x1b[0m');
-    assert.ok(highlightGraphqlLines(['field(arg: "unfinished'], {string:'\\x1b[32m'})[0].includes('\\x1b[32m"unfinished\\x1b[0m'));
-    assert.ok(highlightSqlLines(['SELECT $'], sqlStyles)[0].includes('\\x1b[90m$\\x1b[0m'));
-    assert.ok(highlightGraphqlLines(['field(arg: "unfinished'], graphqlStyles)[0].includes('\\x1b[32m"unfinished\\x1b[0m'));
-    assert.ok(highlightGraphqlLines(['field(arg: "ΩΩ🌟")'], graphqlStyles)[0].includes('\\x1b[32m"ΩΩ🌟"\\x1b[0m'));
+    import {tokenizeLines as postgresqlLines} from '@enlumine/sql/postgresql';
+    import {tokenizeLexically, tokenizeLines as graphqlLines} from '@enlumine/graphql/lexical';
+    const kinds = ({tokens, token_types}) => Array.from({length: tokens.length / 3}, (_, i) => token_types[tokens[i * 3]]);
+    assert.deepEqual(Object.keys(sqlModule).sort(),['default','tokenizeLines']);
+    assert.deepEqual(Object.keys(postgresqlModule).sort(),['default','tokenizeLines']);
+    assert.ok(!kinds(postgresqlLines(["SELECT '\\\\'", 'FROM t'])[1]).includes('string'));
+    assert.deepEqual(kinds(sqlLines(['SELECT 1 /* comment', 'end */'])[1]), ['comment']);
+    assert.ok(kinds(graphqlLines(['field(arg: "unfinished'])[0]).includes('string'));
+    assert.ok(kinds(graphqlLines(['field(arg: "ΩΩ🌟")'])[0]).includes('string'));
     assert.ok(tokenizeLexically('"ΩΩ🌟"'));
     assert.equal(tokenizeLexically('"'+String.fromCharCode(0xd800)+'"'),undefined);
     for (const name of ['enlumine','@enlumine/typescript','@enlumine/json','@enlumine/terminal','@twinkleplop/core'])
@@ -66,20 +56,14 @@ try {
   `;
   run(process.execPath, ["--input-type=module", "-e", minimalSource], minimal);
   await writeFile(resolve(minimal, "consumer.mts"), `
-    import {highlightSqlLines, type SqlStyles} from '@enlumine/sql/editor';
-    import postgresql from '@enlumine/sql/postgresql';
-    import {highlightSqlLines as highlightPostgresqlLines} from '@enlumine/sql/postgresql/editor';
-    import {highlightGraphqlLines, type GraphqlStyles} from '@enlumine/graphql/editor';
-    import sqlTheme from '@enlumine/sql/themes/ansi';
-    import graphqlTheme from '@enlumine/graphql/themes/ansi';
-    const sql: SqlStyles = {keyword:'\\x1b[34m'};
-    const graphql: GraphqlStyles = {string:'\\x1b[32m'};
-    highlightSqlLines(['SELECT 1'], sql);
-    highlightPostgresqlLines(['SELECT 1'], sql);
+    import sql, {tokenizeLines as sqlLines} from '@enlumine/sql';
+    import postgresql, {tokenizeLines as postgresqlLines} from '@enlumine/sql/postgresql';
+    import {tokenizeLines as graphqlLines} from '@enlumine/graphql/lexical';
+    sql('SELECT 1').tokens.slice();
     postgresql('SELECT 1').tokens.slice();
-    highlightGraphqlLines(['field'], graphql);
-    highlightSqlLines(['SELECT 1'], sqlTheme);
-    highlightGraphqlLines(['field'], graphqlTheme);
+    sqlLines(['SELECT 1'])[0].tokens.slice();
+    postgresqlLines(['SELECT 1'])[0].tokens.slice();
+    graphqlLines(['field'])[0].token_types.slice();
   `);
   run(process.execPath, [resolve(root, "node_modules/typescript/bin/tsc"), "--noEmit", "--strict", "--target", "ES2022", "--module", "NodeNext", "--moduleResolution", "NodeNext", "consumer.mts"], minimal);
   await writeFile(resolve(consumer, "package.json"), '{"private":true,"type":"module"}');
@@ -103,26 +87,24 @@ try {
   assert.ok(output.includes("\x1b["));
   assert.equal(output.replace(/\x1b\[[0-9;]*m/g, ""), "SELECT 42;\n");
   const source = `
-    import { highlight as render } from '@enlumine/terminal';
+    import { highlight as render, highlightLines } from '@enlumine/terminal';
     import { highlight } from 'enlumine';
-    import { highlightSqlLines } from '@enlumine/sql/editor';
-    import { highlightGraphqlLines } from '@enlumine/graphql/editor';
     import dark from '@enlumine/terminal/themes/dark';
     import ansi from '@enlumine/terminal/themes/ansi';
     import { tokenize, type Tokenizer } from '@enlumine/core';
     import json from '@enlumine/json';
     import typescript from '@enlumine/typescript';
-    import sql from '@enlumine/sql';
+    import sql, { tokenizeLines as sqlLines } from '@enlumine/sql';
     import graphql, { tokenizeFragment, type FragmentContext } from '@enlumine/graphql';
-    import { tokenizeLexically } from '@enlumine/graphql/lexical';
+    import { tokenizeLexically, tokenizeLines as graphqlLines } from '@enlumine/graphql/lexical';
     const lexers: Tokenizer[] = [json, typescript, sql, graphql];
     for (const tokenizer of lexers) {
       render('42', {theme:dark,tokenizer, colorLevel: 2});
       tokenize('42', tokenizer);
     }
     highlight('42', {theme:dark,lang:'json'});
-    highlightSqlLines(['SELECT 1 /* comment', 'end */'], ansi.sql);
-    highlightGraphqlLines(['query { field(arg: "unfinished'], ansi.graphql);
+    highlightLines(['SELECT 1 /* comment', 'end */'], {tokenizeLines: sqlLines, styles: ansi.sql});
+    highlightLines(['query { field(arg: "unfinished'], {tokenizeLines: graphqlLines, styles: ansi.graphql});
     const context: FragmentContext = 'selection';
     tokenizeFragment('user(id: $id) { name }', context);
     const lexical = tokenizeLexically('user(id: $id)');
@@ -133,8 +115,8 @@ try {
   run(process.execPath,["--input-type=module","-e",`
     import assert from 'node:assert/strict';
     import {tokenizeFragment} from '@enlumine/graphql';
-    import {tokenizeLexically} from '@enlumine/graphql/lexical';
-    import {highlightGraphqlLines} from '@enlumine/graphql/editor';
+    import {tokenizeLexically, tokenizeLines} from '@enlumine/graphql/lexical';
+    import {highlightLines} from '@enlumine/terminal';
     import ansi from '@enlumine/terminal/themes/ansi';
     const source='user(id: $id) { name }';
     const result=tokenizeFragment(source);
@@ -143,7 +125,7 @@ try {
     assert.throws(()=>tokenizeFragment(source,'constructor'),RangeError);
     assert.equal(tokenizeLexically('"unfinished'),undefined);
     assert.equal(tokenizeLexically('user(id: $id)').token_types[0],'name');
-    assert.ok(highlightGraphqlLines(['query { field(arg: "unfinished'],ansi.graphql)[0].includes('\\x1b[32m"unfinished\\x1b[0m'));
+    assert.ok(highlightLines(['query { field(arg: "unfinished'],{tokenizeLines,styles:ansi.graphql})[0].includes('\\x1b[32m"unfinished\\x1b[0m'));
   `],consumer);
   for (const name of ["typescript", "json", "graphql"])
     await rm(resolve(consumer, "node_modules/@enlumine", name), {recursive:true,force:true});

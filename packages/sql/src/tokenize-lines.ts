@@ -1,32 +1,29 @@
 import {tokenTypes} from "enlumine:sql-lexical-data";
+import type {PackedTokens} from "@enlumine/core";
 import type {Dialect} from "./lexer.js";
 
-export type SqlStyles = Readonly<Record<string, string | undefined>>;
+type Push = (kind: string, start: number, end: number) => void;
 
-const reset = "\x1b[0m";
-function paint(text: string, style: string | undefined): string {
-  return style ? style + text + reset : text;
+function gaps(source: string, from: number, to: number, offset: number, push: Push) {
+  for (const part of source.slice(from, to).matchAll(/\S+/g))
+    push("special", offset + from + part.index, offset + from + part.index + part[0].length);
 }
 
-function sqlGap(text: string, styles: SqlStyles): string {
-  return text.replace(/\S+/g, part => paint(part, styles.special));
-}
-
-function highlightSqlCode(source: string, styles: SqlStyles, tokenizeTokens: (source: string) => Uint32Array): string {
+function codeSpans(source: string, offset: number, tokenizeTokens: (source: string) => Uint32Array, push: Push) {
   const tokens = tokenizeTokens(source);
-  let output = "", cursor = 0;
+  let cursor = 0;
   for (let i = 0; i < tokens.length; i += 3) {
     const start = tokens[i + 1], end = tokens[i + 2];
-    output += sqlGap(source.slice(cursor, start), styles);
-    const text = source.slice(start, end), kind = tokenTypes[tokens[i]] ?? "function";
-    output += kind === "punctuation"
-      ? text.replace(/\S/g, char => paint(char, "()[]{}".includes(char) ? styles.bracket : styles.punctuation))
-      : paint(text, styles[kind]);
+    gaps(source, cursor, start, offset, push);
+    const kind = tokenTypes[tokens[i]] ?? "function";
+    if (kind === "punctuation") {
+      for (let at = start; at < end; at++)
+        if (/\S/.test(source[at])) push("()[]{}".includes(source[at]) ? "bracket" : "punctuation", offset + at, offset + at + 1);
+    } else push(kind, offset + start, offset + end);
     cursor = end;
   }
-  return output + sqlGap(source.slice(cursor), styles);
+  gaps(source, cursor, source.length, offset, push);
 }
-
 
 function quoteEnd(line: string, from: number, quote: string, escapes: boolean): number {
   let end = from;
@@ -40,16 +37,23 @@ function quoteEnd(line: string, from: number, quote: string, escapes: boolean): 
   return -1;
 }
 
-export function createHighlighter(tokenizeTokens: (source: string) => Uint32Array, dialect: Dialect) {
+export function createLineTokenizer(tokenizeTokens: (source: string) => Uint32Array, dialect: Dialect) {
   const markers = new RegExp(`\\/\\*|--${dialect.hash ? "|#(?!>)" : ""}|\\$(?:[A-Z_]\\w*)?\\$|['${dialect.quotes.replace(/[\]\\^-]/g, "\\$&")}]`, "gi");
-  return function highlightSqlLines(lines: readonly string[], styles: SqlStyles): string[] {
+  return function tokenizeLines(lines: readonly string[]): PackedTokens[] {
+    const names: string[] = [];
     let depth = 0, delimiter = "", literalEscapes = false;
-    let literalStyle: string | undefined;
+    let literalKind = "";
     return lines.map(line => {
-      let output = "", start = 0, i = 0;
-      const emit = (stop: number, style: string | undefined) => {
-        if (start < i) output += highlightSqlCode(line.slice(start, i), styles, tokenizeTokens);
-        if (i < stop) output += paint(line.slice(i, stop), style);
+      const tokens: number[] = [];
+      const push: Push = (kind, start, end) => {
+        let id = names.indexOf(kind);
+        if (id < 0) id = names.push(kind) - 1;
+        tokens.push(id, start, end);
+      };
+      let start = 0, i = 0;
+      const emit = (stop: number, kind: string) => {
+        if (start < i) codeSpans(line.slice(start, i), start, tokenizeTokens, push);
+        if (i < stop) push(kind, i, stop);
         start = i = stop;
       };
       const takeBlockComment = (from: number) => {
@@ -63,12 +67,12 @@ export function createHighlighter(tokenizeTokens: (source: string) => Uint32Arra
             j += 2;
           } else j++;
         }
-        emit(j, styles.comment);
+        emit(j, "comment");
       };
       while (i < line.length) {
         if (delimiter) {
           const close = delimiter.length === 1 ? quoteEnd(line, i, delimiter, literalEscapes) : line.indexOf(delimiter, i);
-          emit(close < 0 ? line.length : close + (delimiter.length === 1 ? 0 : delimiter.length), literalStyle);
+          emit(close < 0 ? line.length : close + (delimiter.length === 1 ? 0 : delimiter.length), literalKind);
           if (close >= 0) delimiter = "";
         } else if (depth > 0) takeBlockComment(i);
         else {
@@ -80,7 +84,7 @@ export function createHighlighter(tokenizeTokens: (source: string) => Uint32Arra
           if (text === "/*") {
             depth = 1;
             takeBlockComment(i + 2);
-          } else if (text === "--" || text === "#") emit(line.length, styles.comment);
+          } else if (text === "--" || text === "#") emit(line.length, "comment");
           else {
             const quote = text === "[" ? "]" : text;
             const escapes = text === "'" && (dialect.backslash ||
@@ -91,18 +95,19 @@ export function createHighlighter(tokenizeTokens: (source: string) => Uint32Arra
               if (close < 0) {
                 delimiter = quote;
                 literalEscapes = escapes;
-                literalStyle = text === "'" ? styles.string : styles.identifier;
+                literalKind = text === "'" ? "string" : "identifier";
               }
               i = end;
             }
             else {
-              if (close < 0) { delimiter = text; literalStyle = styles.string; }
-              emit(end, styles.string);
+              if (close < 0) { delimiter = text; literalKind = "string"; }
+              emit(end, "string");
             }
           }
         }
       }
-      return output + (start < line.length ? highlightSqlCode(line.slice(start), styles, tokenizeTokens) : "");
+      if (start < line.length) codeSpans(line.slice(start), start, tokenizeTokens, push);
+      return { tokens: Uint32Array.from(tokens), token_types: names };
     });
   };
 }

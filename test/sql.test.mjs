@@ -6,21 +6,21 @@ import { build } from "esbuild";
 
 const reference=tokenize();
 
-test("SQL editor calls preserve public type tables and owned token results",async()=>{
+test("SQL line tokenizing calls preserve public type tables and owned token results",async()=>{
   const options={bundle:true,write:false,format:"esm",platform:"node",target:"node22",minify:true};
-  const own=await build({...options,stdin:{contents:'export {default} from "./packages/sql/dist/index.js";export {highlightSqlLines} from "./packages/sql/dist/editor.js";',resolveDir:new URL("../",import.meta.url).pathname}});
+  const own=await build({...options,stdin:{contents:'export {default} from "./packages/sql/dist/index.js";export {tokenizeLines} from "./packages/sql/dist/index.js";',resolveDir:new URL("../",import.meta.url).pathname}});
   const native=await build({...options,stdin:{contents:'import {tokenize} from "@twinkleplop/sql";export default tokenize();',resolveDir:new URL("../",import.meta.url).pathname}});
   const load=async result=>import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].contents).toString("base64")}#editor-state`);
   const actual=await load(own),expected=(await load(native)).default;
   for(const line of [""," ","-- comment","/* comment */","$tag$body$tag$"]) {
-    actual.highlightSqlLines([line],{});
+    actual.tokenizeLines([line]);
     assert.deepEqual(actual.default(""),expected(""));
   }
-  actual.highlightSqlLines(["SELECT f(x)"],{});
+  actual.tokenizeLines(["SELECT f(x)"]);
   expected("SELECT f(x)");
   for(const source of ["","SELECT NULL, f(x)"," "])assert.deepEqual(actual.default(source),expected(source));
   const retained=actual.default("SELECT id FROM users"),snapshot=structuredClone(retained);
-  actual.highlightSqlLines(["SELECT g(1), name FROM users"],{});
+  actual.tokenizeLines(["SELECT g(1), name FROM users"]);
   assert.deepEqual(retained,snapshot);
 });
 
