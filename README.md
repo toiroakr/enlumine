@@ -112,7 +112,7 @@ import { tokenizeLines } from "@enlumine/sql/postgresql";
 highlightLines(["SELECT replace(path, '\\', '/'), ARRAY['a', 'b']"], { tokenizeLines, styles: ansi.sql });
 ```
 
-PostgreSQL differs in four ways: a backslash inside `'...'` is an ordinary character (`E'...'` strings still use backslash escapes), `[` and `]` are brackets, `#` is an operator, and a backtick does not quote an identifier. The dialect entries export the same `default` and `tokenizeLines` as `@enlumine/sql`.
+PostgreSQL differs in four ways: a backslash inside `'...'` is an ordinary character (`E'...'` strings still use backslash escapes), `[` and `]` are brackets, `#` is an operator, and a backtick does not quote an identifier. The dialect entries export the same `default` and `tokenizeLines` as `@enlumine/sql`. Dollar-quoted strings (`$$ ... $$` and `$tag$ ... $tag$`) are PostgreSQL syntax, not standard SQL; the default entry accepts them because it accepts every dialect's syntax, and the tagged form is an intentional difference from the pinned twinkleplop tokenizer, which only knows `$$`.
 
 ## Scan GraphQL fragments
 

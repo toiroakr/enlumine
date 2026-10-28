@@ -155,13 +155,13 @@ function lex(source: string, dialect: Dialect): Uint32Array {
         }
       }
     }
-    else if (text === "$$") {
-      const close = source.indexOf("$$", position);
+    else if (first === 36 && text.length > 1 && text.endsWith("$")) {
+      const close = source.indexOf(text, position);
       emit(Kind.String, start, position, true);
       emit(Kind.String, position, close < 0 ? source.length : close);
       if (close >= 0)
-        emit(Kind.String, close, close + 2, true);
-      position = close < 0 ? source.length : close + 2;
+        emit(Kind.String, close, close + text.length, true);
+      position = close < 0 ? source.length : close + text.length;
     }
     else if (first === 39 || dialect.quotes.includes(source[start])) {
       position = quoted(start, position, first === 39 ? Kind.String : Kind.Identifier,

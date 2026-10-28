@@ -34,6 +34,7 @@ const fixtures = {
   sql: [
     "SELECT u.id, COUNT(*) AS total FROM users u WHERE u.active = TRUE GROUP BY u.id;",
     "select 'it''s fine', $$hello 🌟$$, $tag$body$tag$, 1.5e-2; -- comment\r\n",
+    "select 'it''s fine', $$hello 🌟$$, 1.5e-2; -- comment\r\n",
     "WITH sample AS (SELECT 1) SELECT * FROM sample; /* outer /* inner */ end */",
     "CREATE TABLE users (id UUID PRIMARY KEY, name TEXT NOT NULL);",
     'SELECT "λΩΩ", [column], `name`, :name, $1, @var;',
@@ -108,6 +109,8 @@ for (const [language, samples] of Object.entries(fixtures)) {
       inputs.push(source);
     }
     for (const source of inputs) {
+      // Upstream does not know PostgreSQL's tagged dollar quoting ($tag$ ... $tag$); sql-dialects.test.mjs pins ours.
+      if (language === "sql" && /\$[A-Za-z_]\w*\$/.test(source)) continue;
       const expected = reference(source);
       const actual = runtime(source);
       if (language === "typescript") assert.ok(sameTables(actual, expected, source), JSON.stringify({ language, source }));

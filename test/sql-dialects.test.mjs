@@ -50,6 +50,17 @@ test("PostgreSQL treats [ and ] as punctuation instead of a quoted identifier", 
   ]);
 });
 
+test("a tagged dollar-quoted string stays one string, with the same tag closing it", () => {
+  assert.deepEqual(spans(postgresql, "SELECT $tag$it's $$ x$tag$ AS y"), [
+    ["keyword", "SELECT"],
+    ["string", "$tag$it's $$ x"],
+    ["string", "$tag$"],
+    ["keyword", "AS"],
+    ["identifier", "y"],
+  ]);
+  assert.deepEqual(spans(generic, "$a$b$a$"), [["string", "$a$b"], ["string", "$a$"]]);
+});
+
 test("a numbered parameter is not mistaken for a dollar-quote tag", () => {
   assert.deepEqual(spans(postgresql, "$1, $2"), [["variable", "$1"], ["punctuation", ","], ["variable", "$2"]]);
 });
