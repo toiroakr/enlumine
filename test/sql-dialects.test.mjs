@@ -74,6 +74,8 @@ test("PostgreSQL has no @name, :name or ? parameters: they are operators followe
   ]);
   assert.deepEqual(spans(postgresql, "'{}'::jsonb ? 'a'").slice(-2), [["operator", "?"], ["string", "'a'"]]);
   assert.deepEqual(spans(postgresql, "$1"), [["variable", "$1"]]);
+  for (const source of ["a @@ b", "a @@b", "a@@b"])
+    assert.deepEqual(spans(postgresql, source).map(([kind]) => kind), ["identifier", "operator", "identifier"], source);
 });
 
 test("the default entry still reads @name, :name and ? as parameters", () => {
