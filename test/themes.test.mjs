@@ -1,15 +1,17 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
 import {build} from "esbuild";
-import {highlight} from "../packages/terminal/dist/index.js";
-import {highlightSqlLines} from "../packages/sql/dist/editor.js";
-import {highlightGraphqlLines} from "../packages/graphql/dist/editor.js";
+import {highlight,highlightLines} from "../packages/terminal/dist/index.js";
+import {tokenizeLines as sqlLines} from "../packages/sql/dist/index.js";
+import {tokenizeLines as graphqlLines} from "../packages/graphql/dist/lexical.js";
+const highlightSqlLines=(lines,styles)=>highlightLines(lines,{tokenizeLines:sqlLines,styles});
+const highlightGraphqlLines=(lines,styles)=>highlightLines(lines,{tokenizeLines:graphqlLines,styles});
 
 test("renderers contain no theme data and importing dark includes no other theme",async()=>{
   for(const selected of [null,"dark","light","ansi"]) {
     const contents=selected
       ? `export {highlight} from './packages/terminal/dist/index.js';export {default as theme} from './packages/terminal/dist/themes/${selected}.js';`
-      : `export {highlight} from './packages/terminal/dist/index.js';export {highlightSqlLines} from './packages/sql/dist/editor.js';export {highlightGraphqlLines} from './packages/graphql/dist/editor.js';`;
+      : `export {highlight,highlightLines} from './packages/terminal/dist/index.js';export {tokenizeLines as sqlLines} from './packages/sql/dist/index.js';export {tokenizeLines as graphqlLines} from './packages/graphql/dist/lexical.js';`;
     const result=await build({stdin:{contents,resolveDir:new URL("../",import.meta.url).pathname},bundle:true,write:false,metafile:true,platform:"node",format:"esm",minify:true});
     const themes=Object.keys(result.metafile.inputs).filter(path=>path.includes("/themes/"));
     assert.deepEqual(themes,selected?[`packages/terminal/dist/themes/${selected}.js`]:[]);
@@ -21,15 +23,15 @@ test("generic rendering requires an explicit theme and honors an empty theme",()
   assert.equal(highlight("plain",{tokenizer:null,theme:{}}),"plain");
 });
 
-test("language ANSI themes bundle without a tokenizer, renderer or another language",async()=>{
-  for(const language of ["sql","graphql"]) {
-    const result=await build({stdin:{contents:`export {default} from './packages/${language}/dist/themes/ansi.js';`,resolveDir:new URL("../",import.meta.url).pathname},bundle:true,write:false,metafile:true,platform:"node",format:"esm",minify:true});
-    assert.ok(Object.keys(result.metafile.inputs).filter(path=>path!=="<stdin>").every(path=>path.startsWith(`packages/${language}/dist/themes/`)));
-    assert.ok(Object.values(result.metafile.outputs).every(output=>output.imports.length===0));
+test("line tokenizers carry no ANSI codes and import no renderer",async()=>{
+  for(const entry of ["sql/dist/index.js","graphql/dist/lexical.js"]) {
+    const result=await build({stdin:{contents:`export {tokenizeLines} from './packages/${entry}';`,resolveDir:new URL("../",import.meta.url).pathname},bundle:true,write:false,metafile:true,platform:"node",format:"esm",minify:true});
+    assert.ok(!/\[\d+(?:;\d+)*m|\x1b|\\x1b|\\u001b/.test(result.outputFiles[0].text),entry);
+    assert.ok(Object.keys(result.metafile.inputs).every(path=>!path.includes("/terminal/")),entry);
   }
 });
 
-test("editor rendering uses the supplied styles without a fallback palette",()=>{
+test("line rendering uses the supplied styles without a fallback palette",()=>{
   const theme={sql:{keyword:"\x1b[31m"},graphql:{property:"\x1b[35m",string:"\x1b[36m"}};
   assert.ok(highlightSqlLines(["SELECT 1"],theme.sql)[0].includes("\x1b[31mSELECT\x1b[0m"));
   assert.equal(highlightGraphqlLines(['field(arg: "unfinished'],theme.graphql)[0],

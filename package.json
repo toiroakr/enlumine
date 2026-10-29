@@ -7,7 +7,7 @@
     "build": "node scripts/build.mjs",
     "check": "tsc --noEmit",
     "test": "pnpm build && node --test test/*.test.mjs && node scripts/check-bundle-sizes.mjs",
-    "test:editor": "pnpm build && node --test test/editor.test.mjs",
+    "test:highlight-lines": "pnpm build && node --test test/highlight-lines.test.mjs",
     "test:compatibility": "pnpm build && node --test test/compatibility.test.mjs test/json.test.mjs test/sql.test.mjs test/graphql-lexical.test.mjs",
     "smoke:packages": "pnpm build && node scripts/smoke-packages.mjs",
     "size": "pnpm build && node scripts/size.mjs",
@@ -23,6 +23,7 @@
     "url": "git+https://github.com/toiroakr/enlumine.git"
   },
   "devDependencies": {
+    "@changesets/cli": "3.0.3",
     "@twinkleplop/core": "0.3.1",
     "@twinkleplop/css": "0.1.7",
     "@twinkleplop/graphql": "0.2.1",
@@ -34,9 +35,9 @@
     "@types/node": "^22.0.0",
     "esbuild": "0.28.2",
     "graphql": "17.0.2",
+    "rolldown": "1.2.14",
     "terser": "5.51.2",
-    "typescript": "^5.9.0",
-    "@changesets/cli": "3.0.3"
+    "typescript": "^5.9.0"
   },
   "private": true,
   "packageManager": "pnpm@12.14.0",

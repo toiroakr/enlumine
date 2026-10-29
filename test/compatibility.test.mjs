@@ -3,7 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { highlight, resolveLanguage } from "../packages/enlumine/dist/index.js";
-import { sameTables } from "../scripts/token-tables.mjs";
+import { sameTables, dollarQuoteDiffersFromUpstream } from "../scripts/token-tables.mjs";
 
 const fixtures = {
   json: [
@@ -34,6 +34,7 @@ const fixtures = {
   sql: [
     "SELECT u.id, COUNT(*) AS total FROM users u WHERE u.active = TRUE GROUP BY u.id;",
     "select 'it''s fine', $$hello 🌟$$, $tag$body$tag$, 1.5e-2; -- comment\r\n",
+    "select 'it''s fine', $$hello 🌟$$, 1.5e-2; -- comment\r\n",
     "WITH sample AS (SELECT 1) SELECT * FROM sample; /* outer /* inner */ end */",
     "CREATE TABLE users (id UUID PRIMARY KEY, name TEXT NOT NULL);",
     'SELECT "λΩΩ", [column], `name`, :name, $1, @var;',
@@ -110,6 +111,8 @@ for (const [language, samples] of Object.entries(fixtures)) {
     for (const source of inputs) {
       const expected = reference(source);
       const actual = runtime(source);
+      // Upstream does not know PostgreSQL's tagged dollar quoting ($tag$ ... $tag$) or that a $ after a non-ASCII letter continues an identifier; sql-dialects.test.mjs pins ours.
+      if (language === "sql" && dollarQuoteDiffersFromUpstream(actual, source)) continue;
       if (language === "typescript") assert.ok(sameTables(actual, expected, source), JSON.stringify({ language, source }));
       else {
         assert.deepEqual(actual.tokens, expected.tokens, JSON.stringify({ language, source }));

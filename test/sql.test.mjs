@@ -3,24 +3,25 @@ import assert from "node:assert/strict";
 import sql from "../packages/sql/dist/index.js";
 import { tokenize, raw_grammar } from "@twinkleplop/sql";
 import { build } from "esbuild";
+import { hasTaggedDollarQuote, dollarQuoteDiffersFromUpstream } from "../scripts/token-tables.mjs";
 
 const reference=tokenize();
 
-test("SQL editor calls preserve public type tables and owned token results",async()=>{
+test("SQL line tokenizing calls preserve public type tables and owned token results",async()=>{
   const options={bundle:true,write:false,format:"esm",platform:"node",target:"node22",minify:true};
-  const own=await build({...options,stdin:{contents:'export {default} from "./packages/sql/dist/index.js";export {highlightSqlLines} from "./packages/sql/dist/editor.js";',resolveDir:new URL("../",import.meta.url).pathname}});
+  const own=await build({...options,stdin:{contents:'export {default} from "./packages/sql/dist/index.js";export {tokenizeLines} from "./packages/sql/dist/index.js";',resolveDir:new URL("../",import.meta.url).pathname}});
   const native=await build({...options,stdin:{contents:'import {tokenize} from "@twinkleplop/sql";export default tokenize();',resolveDir:new URL("../",import.meta.url).pathname}});
   const load=async result=>import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].contents).toString("base64")}#editor-state`);
   const actual=await load(own),expected=(await load(native)).default;
   for(const line of [""," ","-- comment","/* comment */","$tag$body$tag$"]) {
-    actual.highlightSqlLines([line],{});
+    actual.tokenizeLines([line]);
     assert.deepEqual(actual.default(""),expected(""));
   }
-  actual.highlightSqlLines(["SELECT f(x)"],{});
+  actual.tokenizeLines(["SELECT f(x)"]);
   expected("SELECT f(x)");
   for(const source of ["","SELECT NULL, f(x)"," "])assert.deepEqual(actual.default(source),expected(source));
   const retained=actual.default("SELECT id FROM users"),snapshot=structuredClone(retained);
-  actual.highlightSqlLines(["SELECT g(1), name FROM users"],{});
+  actual.tokenizeLines(["SELECT g(1), name FROM users"]);
   assert.deepEqual(retained,snapshot);
 });
 
@@ -103,7 +104,8 @@ test("SQL vocabulary from the pinned upstream module retains classification in e
 
 test("SQL lexical execution preserves upstream probes, escapes, operators, and incomplete input", t => {
   let count=0;
-  const check=source=>{assert.deepEqual(sql(source),reference(source),JSON.stringify(source));count++;};
+  // Upstream does not know PostgreSQL's tagged dollar quoting ($tag$ ... $tag$) or that a $ after a non-ASCII letter continues an identifier; sql-dialects.test.mjs pins ours.
+  const check=source=>{const actual=sql(source);if(dollarQuoteDiffersFromUpstream(actual,source))return;assert.deepEqual(actual,reference(source),JSON.stringify(source));count++;};
   for(let code=0;code<256;code++) for(const prefix of ["$","@","@@",":","?","e'","U&'","0x","1e","1."]) {
     check(prefix+String.fromCharCode(code)+"x");
     if(prefix==="$"||prefix==="@"||prefix==="@@")
@@ -121,4 +123,11 @@ test("SQL lexical execution preserves upstream probes, escapes, operators, and i
     check(source);
   }
   t.diagnostic(`${count} independent upstream packed-token comparisons`);
+});
+
+test("the exemption for dollar-quoted strings does not skip ordinary strings that merely contain a dollar sign",()=>{
+  for(const source of ["SELECT 'a\\n$not_a_tag'","SELECT 'a''$ab$'","SELECT 'a\\n$ab$'"])
+    assert.equal(hasTaggedDollarQuote(sql(source),source),false,source);
+  for(const source of ["SELECT $t$x$t$","SELECT 1, $é$x$é$ FROM t"])
+    assert.equal(hasTaggedDollarQuote(sql(source),source),true,source);
 });

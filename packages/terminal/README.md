@@ -12,4 +12,14 @@ import sql from "@enlumine/sql";
 const output = highlight("SELECT 42;", { tokenizer: sql, theme: dark });
 ```
 
+For editor lines, pass a language's `tokenizeLines` and a map from token kind to ANSI escape string:
+
+```ts
+import { highlightLines } from "@enlumine/terminal";
+import ansi from "@enlumine/terminal/themes/ansi";
+import { tokenizeLines } from "@enlumine/sql";
+
+const lines = highlightLines(["SELECT 1 /* comment", "end */"], { tokenizeLines, styles: ansi.sql });
+```
+
 See the [project documentation](https://github.com/toiroakr/enlumine#readme) for API details, language limits, CLI options, and independent package usage. Third-party notices are included in `THIRD_PARTY_NOTICES.txt`.

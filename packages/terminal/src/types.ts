@@ -1,4 +1,4 @@
-import type { TokenKind, Tokenizer } from '@enlumine/core';
+import type { LinesTokenizer, TokenKind, Tokenizer } from '@enlumine/core';
 export type ColorLevel = 0 | 1 | 2 | 3;
 export type Theme = Partial<Record<TokenKind, `#${string}`>>;
 export interface HighlightOptions {
@@ -6,7 +6,12 @@ export interface HighlightOptions {
   colorLevel?: ColorLevel;
   theme: Theme;
 }
-export interface EditorTheme {
-  sql: Readonly<Partial<Record<string, string>>>;
-  graphql: Readonly<Partial<Record<string, string>>>;
+export type LineStyles = Readonly<Record<string, string | undefined>>;
+export interface HighlightLinesOptions {
+  tokenizeLines: LinesTokenizer;
+  styles: LineStyles;
+}
+export interface LineTheme {
+  sql: LineStyles;
+  graphql: LineStyles;
 }

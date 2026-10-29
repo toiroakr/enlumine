@@ -126,3 +126,14 @@ export function differences(actual, expected, source) {
 }
 
 export const sameTables = (actual, expected, source) => differences(actual, expected, source)?.every(change => change.allowed) ?? false;
+
+export const hasTaggedDollarQuote = ({ tokens, token_types }, source) => {
+  for (let i = 0; i < tokens.length; i += 3) {
+    if (token_types[tokens[i]] !== "string" || !/^\$[A-Za-z_\u0080-\uffff][\w\u0080-\uffff]*\$/.test(source.slice(tokens[i + 1], tokens[i + 2]))) continue;
+    const continues = i > 0 && tokens[i - 1] === tokens[i + 1] && ["string", "string_escape"].includes(token_types[tokens[i - 3]]);
+    if (!continues) return true;
+  }
+  return false;
+};
+
+export const dollarQuoteDiffersFromUpstream = (actual, source) => hasTaggedDollarQuote(actual, source) || /[\u0080-\uffff]\$\$/.test(source);
