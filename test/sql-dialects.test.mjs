@@ -113,6 +113,14 @@ test("PostgreSQL line highlighting colours array elements as strings, also when 
   ]);
 });
 
+test("PostgreSQL line highlighting does not read a $ inside an identifier as a dollar-quote tag", () => {
+  assert.deepEqual(render(["SELECT a$b$c FROM t", "WHERE x = 1", "AND y = 2"]), [
+    "SELECT a$b$c FROM t",
+    "WHERE x = 1",
+    "AND y = 2",
+  ]);
+});
+
 test("PostgreSQL line highlighting keeps an E string open across an escaped quote and a line break", () => {
   assert.equal(render(["SELECT E'a\\'b", "c' AS x"])[1], "[S]c' AS x");
 });
