@@ -120,11 +120,24 @@ test("SQL lexical execution preserves upstream probes, escapes, operators, and i
     for(const suffix of ["","x","1","(",")"])check(prefix+operator+suffix);
   const fragments=["a","_x","Z","0","1","e","E","n","N","b","B","x","X","0x","0b","0o","0X","1e+","1_","1.","'",'"',"`","[",
     "]","\\","\\x","\\u","\\U","\\0","''",'""',"``", "]]","$$","$tag$","$1","@","@@",":","?","/","*","--","#"," ","\n","\r","\t","\0","🌟","ΩΩ","K","\ud800","\udfff","+","-","<=>","#>>","->>","@>","::","?|","?&"];
+  const wide=/[^\0-\x7f]/;
+  const ascii=fragments.filter(fragment=>!wide.test(fragment));
   let seed=737;
   for(let i=0;i<15000;i++) {
     let source="";
-    for(let n=0;n<20;n++){seed=(Math.imul(seed,1664525)+1013904223)>>>0;source+=fragments[seed%fragments.length];}
+    for(let n=0;n<20;n++){seed=(Math.imul(seed,1664525)+1013904223)>>>0;source+=ascii[seed%ascii.length];}
     check(source);
+  }
+  // Non-ASCII input has no upstream counterpart: a non-ASCII letter must split the source exactly like an ASCII letter in its place,
+  // and a Unicode space like a control character that the lexer skips. Fragments with @, : or ? are left out: whether they start a variable
+  // comes from upstream probes over ASCII classes, and sql-dialects.test.mjs pins the non-ASCII names after them.
+  const mixed=[...fragments.filter(fragment=>!/[@:?]/.test(fragment)),"\u00e9","\u3000","\u0085"];
+  const segments=(source)=>{const {tokens,token_types}=sql(source);return Array.from({length:tokens.length/3},(_,k)=>{const kind=token_types[tokens[k*3]];return [["keyword","boolean","type"].includes(kind)?"identifier":kind,tokens[k*3+1],tokens[k*3+2]].join(":");});};
+  for(let i=0;i<8000;i++) {
+    let source="";
+    for(let n=0;n<20;n++){seed=(Math.imul(seed,1664525)+1013904223)>>>0;source+=mixed[seed%mixed.length];}
+    const projected=source.replace(/[^\0-\x7f]/g,char=>/[\s\u0085]/.test(char)?String.fromCharCode(1):"Q");
+    assert.deepEqual(segments(source),segments(projected),JSON.stringify(source));
   }
   t.diagnostic(`${count} independent upstream packed-token comparisons`);
 });
@@ -132,7 +145,7 @@ test("SQL lexical execution preserves upstream probes, escapes, operators, and i
 test("the exemption for dollar-quoted strings does not skip ordinary strings that merely contain a dollar sign",()=>{
   for(const source of ["SELECT 'a\\n$not_a_tag'","SELECT 'a''$ab$'","SELECT 'a\\n$ab$'"])
     assert.equal(hasTaggedDollarQuote(sql(source),source),false,source);
-  for(const source of ["SELECT $t$x$t$","SELECT 1, $é$x$é$ FROM t"])
+  for(const source of ["SELECT $t$x$t$","SELECT 1, $é$x$é$ FROM t","SELECT ''$t$x$t$"])
     assert.equal(hasTaggedDollarQuote(sql(source),source),true,source);
 });
 

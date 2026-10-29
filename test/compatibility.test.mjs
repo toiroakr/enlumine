@@ -102,10 +102,12 @@ for (const [language, samples] of Object.entries(fixtures)) {
       inputs.push(
         await readFile(new URL("../packages/core/src/core.ts", import.meta.url), "utf8"),
       );
+    // Non-ASCII identifier characters differ from upstream on purpose for SQL; test/sql.test.mjs checks them separately.
+    const pool = language === "sql" ? fragments.filter((fragment) => !/[^\0-\x7f]/.test(fragment)) : fragments;
     for (let i = 0; i < 100; i++) {
       let source = "";
       for (let j = 0, length = random(35); j < length; j++)
-        source += fragments[random(fragments.length)];
+        source += pool[random(pool.length)];
       inputs.push(source);
     }
     for (const source of inputs) {

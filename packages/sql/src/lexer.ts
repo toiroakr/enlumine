@@ -19,7 +19,7 @@ const words = new Map<string, number>();
 for (let group = 0; group < wordGroups.length; group++)
   for (const word of wordGroups[group].split(" ")) words.set(word, wordTypes[group]);
 function space(code: number): boolean {
-  return code === 160 || code === 5760 || (code >= 8192 && code <= 8202) || code === 8232 || code === 8233
+  return code === 133 || code === 160 || code === 5760 || (code >= 8192 && code <= 8202) || code === 8232 || code === 8233
     || code === 8239 || code === 8287 || code === 12288 || code === 65279;
 }
 function identifier(code: number): boolean {
@@ -184,8 +184,9 @@ function lex(source: string, dialect: Dialect): Uint32Array {
     else if (first === 64) {
       const doubled = text.startsWith("@@");
       const probe = doubled ? atAtProbe : atProbe;
-      probe.lastIndex = start + (doubled ? 2 : 1);
-      emit(text !== "@>" && probe.test(source) ? Kind.Variable : Kind.Operator, start, position, doubled || text === "@>");
+      const name = start + (doubled ? 2 : 1);
+      probe.lastIndex = name;
+      emit(text !== "@>" && ((position > name && source.charCodeAt(name) >= 128) || probe.test(source)) ? Kind.Variable : Kind.Operator, start, position, doubled || text === "@>");
     }
     else if (first === 58) {
       emit(text === "::" || text === ":=" ? Kind.Operator : Kind.Variable, start, position, text.length > 1 && (text === "::" || text === ":="));

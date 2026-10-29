@@ -19,6 +19,7 @@ function spans(tokenize, source) {
   return result;
 }
 
+const tokenizeLinesOf = postgresqlTokenizeLines;
 const render = (lines) => highlightLines(lines, { tokenizeLines: postgresqlTokenizeLines, styles: stringOnly }).map(line => line.replaceAll(reset, ""));
 
 test("PostgreSQL treats a backslash inside a plain string as an ordinary character", () => {
@@ -119,6 +120,16 @@ test("keywords are matched case-insensitively for ASCII letters only", () => {
   assert.deepEqual(spans(postgresql, "İstanbul, ſelect, Énum, ıf"), [
     ["identifier", "İstanbul"], ["punctuation", ","], ["identifier", "ſelect"], ["punctuation", ","], ["identifier", "Énum"], ["punctuation", ","], ["identifier", "ıf"],
   ]);
+});
+
+test("U+0085 (next line) is a Unicode space that ends an identifier", () => {
+  assert.deepEqual(spans(postgresql, "foo\u0085bar"), [["identifier", "foo"], ["identifier", "bar"]]);
+});
+
+test("a named parameter may contain non-ASCII characters in the default entry only", () => {
+  assert.deepEqual(spans(generic, ":caf\u00e9"), [["variable", ":caf\u00e9"]]);
+  assert.deepEqual(spans(generic, "@caf\u00e9 x"), [["variable", "@caf\u00e9"], ["identifier", "x"]]);
+  assert.deepEqual(spans(postgresql, ":caf\u00e9"), [["operator", ":"], ["identifier", "caf\u00e9"]]);
 });
 
 test("a numbered parameter is not mistaken for a dollar-quote tag", () => {
@@ -222,6 +233,11 @@ test("line highlighting colours a non-ASCII identifier like an ASCII one, and a 
     "[K]SELECT\u3000[I]café$x",
   ]);
   assert.equal(plain.length, 2);
+});
+
+test("PostgreSQL line highlighting reads the E prefix after a non-ASCII letter like the one after an ASCII letter", () => {
+  const kinds = (lines) => tokenizeLinesOf(lines).map(({ tokens, token_types }) => Array.from({ length: tokens.length / 3 }, (_, i) => token_types[tokens[i * 3]]));
+  assert.deepEqual(kinds(["SELECT \u00e9E'a\\'b'", "SELECT 1"]), kinds(["SELECT xE'a\\'b'", "SELECT 1"]));
 });
 
 test("PostgreSQL line highlighting keeps an E string open across an escaped quote and a line break", () => {

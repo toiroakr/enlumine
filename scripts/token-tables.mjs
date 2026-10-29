@@ -127,10 +127,13 @@ export function differences(actual, expected, source) {
 
 export const sameTables = (actual, expected, source) => differences(actual, expected, source)?.every(change => change.allowed) ?? false;
 
+const nonAscii = /(?![\s\u0085])[\u0080-\uffff]/.source;
+const dollarTag = new RegExp(`^\\$(?:[A-Za-z_]|${nonAscii})(?:\\w|${nonAscii})*\\$`);
+
 export const hasTaggedDollarQuote = ({ tokens, token_types }, source) => {
   for (let i = 0; i < tokens.length; i += 3) {
-    if (token_types[tokens[i]] !== "string" || !/^\$[A-Za-z_\u0080-\uffff][\w\u0080-\uffff]*\$/.test(source.slice(tokens[i + 1], tokens[i + 2]))) continue;
-    const continues = i > 0 && tokens[i - 1] === tokens[i + 1] && ["string", "string_escape"].includes(token_types[tokens[i - 3]]);
+    if (token_types[tokens[i]] !== "string" || !dollarTag.test(source.slice(tokens[i + 1], tokens[i + 2]))) continue;
+    const continues = i > 0 && tokens[i - 1] === tokens[i + 1] && token_types[tokens[i - 3]] === "string_escape";
     if (!continues) return true;
   }
   return false;
@@ -138,7 +141,7 @@ export const hasTaggedDollarQuote = ({ tokens, token_types }, source) => {
 
 export const hasNonAsciiIdentifier = ({ tokens, token_types }, source) => {
   for (let i = 0; i < tokens.length; i += 3) {
-    if (token_types[tokens[i]] !== "identifier" && token_types[tokens[i]] !== "function") continue;
+    if (!["identifier", "function", "variable"].includes(token_types[tokens[i]])) continue;
     const text = source.slice(tokens[i + 1], tokens[i + 2]);
     if (!/^["`[]/.test(text) && /[^\0-\x7f]/.test(text)) return true;
   }
