@@ -149,6 +149,13 @@ test("the exemption for dollar-quoted strings does not skip ordinary strings tha
     assert.equal(hasTaggedDollarQuote(sql(source),source),true,source);
 });
 
+test("the exemption for non-ASCII identifiers looks at the unquoted parts of a token that merges quoted and unquoted parts",()=>{
+  for(const source of ['x"café"',"x`café`","x[café]",'"café"x','U&"café"','u&"café"'])
+    assert.equal(hasNonAsciiIdentifier(sql(source),source),false,source);
+  for(const source of ['"x"café',"`x`café","[x]café",'x"y"é'])
+    assert.equal(hasNonAsciiIdentifier(sql(source),source),true,source);
+});
+
 test("the exemption for non-ASCII identifiers skips only unquoted identifiers that contain them",()=>{
   for(const source of ["SELECT café","SELECT \u540d\u524d(1)","a\u3000\u540d\u524d"])
     assert.equal(hasNonAsciiIdentifier(sql(source),source),true,source);

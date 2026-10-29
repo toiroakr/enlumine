@@ -142,8 +142,8 @@ export const hasTaggedDollarQuote = ({ tokens, token_types }, source) => {
 export const hasNonAsciiIdentifier = ({ tokens, token_types }, source) => {
   for (let i = 0; i < tokens.length; i += 3) {
     if (!["identifier", "function", "variable"].includes(token_types[tokens[i]])) continue;
-    const text = source.slice(tokens[i + 1], tokens[i + 2]);
-    if (!/^["`[]/.test(text) && /[^\0-\x7f]/.test(text)) return true;
+    const unquoted = source.slice(tokens[i + 1], tokens[i + 2]).replace(/"(?:[^"]|"")*"?|`[^`]*`?|\[[^\]]*\]?/g, "");
+    if (/[^\0-\x7f]/.test(unquoted)) return true;
   }
   return false;
 };
