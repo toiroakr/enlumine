@@ -8,6 +8,7 @@ export interface Dialect {
   hash: boolean;
   sigils: string;
 }
+export const standard: Dialect = { quotes: "\"", punctuation: "(){},;.", backslash: false, escapePrefix: "", hash: false, sigils: "" };
 const enum Escape { None, Backslash, Sequences }
 let scratch = new Uint32Array(4096);
 const stringBody = /[^'\\]+/y;
