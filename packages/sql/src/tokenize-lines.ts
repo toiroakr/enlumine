@@ -4,6 +4,9 @@ import type {Dialect} from "./lexer.js";
 
 type Push = (kind: string, start: number, end: number) => void;
 
+const nonAscii = "(?![\\s\\u0085])[\\u0080-\\uffff]";
+const identifierChar = new RegExp(`[\\w$]|${nonAscii}`);
+
 function gaps(source: string, from: number, to: number, offset: number, push: Push) {
   for (const part of source.slice(from, to).matchAll(/\S+/g))
     push("special", offset + from + part.index, offset + from + part.index + part[0].length);
@@ -38,7 +41,7 @@ function quoteEnd(line: string, from: number, quote: string, escapes: boolean): 
 }
 
 export function createLineTokenizer(tokenizeTokens: (source: string) => Uint32Array, dialect: Dialect) {
-  const markers = new RegExp(`\\/\\*|--${dialect.hash ? "|#(?!>)" : ""}|(?<![\\w$\\u0080-\\uffff])\\$(?:[A-Z_\\u0080-\\uffff][\\w\\u0080-\\uffff]*)?\\$|['${dialect.quotes}]`, "gi");
+  const markers = new RegExp(`\\/\\*|--${dialect.hash ? "|#(?!>)" : ""}|(?<![\\w$])(?<!${nonAscii})\\$(?:(?:[A-Z_]|${nonAscii})(?:\\w|${nonAscii})*)?\\$|['${dialect.quotes}]`, "gi");
   return function tokenizeLines(lines: readonly string[]): PackedTokens[] {
     const names: string[] = [];
     let depth = 0, delimiter = "", literalEscapes = false;
@@ -88,7 +91,7 @@ export function createLineTokenizer(tokenizeTokens: (source: string) => Uint32Ar
           else {
             const quote = text === "[" ? "]" : text;
             const escapes = text === "'" && (dialect.backslash ||
-              (i > 0 && dialect.escapePrefix.includes(line[i - 1]) && !/[\w$]/.test(line[i - 2] ?? "")));
+              (i > 0 && dialect.escapePrefix.includes(line[i - 1]) && !identifierChar.test(line[i - 2] ?? "")));
             const close = text.length === 1 ? quoteEnd(line, i + 1, quote, escapes) : line.indexOf(text, i + text.length);
             const end = close < 0 ? line.length : close + (text.length === 1 ? 0 : text.length);
             if (text.length === 1) {
