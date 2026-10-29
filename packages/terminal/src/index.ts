@@ -177,7 +177,7 @@ export function highlightLines(lines: readonly string[], options: HighlightLines
     const line = lines[row];
     let output = "", cursor = 0;
     for (let i = 0; i < tokens.length; i += 3) {
-      const start = tokens[i + 1], end = tokens[i + 2], style = styles[token_types[tokens[i]]];
+      const start = tokens[i + 1], end = tokens[i + 2], kind = token_types[tokens[i]], style = Object.hasOwn(styles, kind) ? styles[kind] : undefined;
       output += line.slice(cursor, start);
       output += style ? style + line.slice(start, end) + "\x1b[0m" : line.slice(start, end);
       cursor = end;

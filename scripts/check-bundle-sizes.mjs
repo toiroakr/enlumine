@@ -16,7 +16,7 @@ for(let mask=1;mask<1<<languages.length;mask++) {
   for(const engine of ["twinkleplop","enlumine"]) {
     const source=selected.map((language,i)=>engine==="twinkleplop"
       ?`import {tokenize as t${i}} from '@twinkleplop/${language}';`
-      :`import t${i} from '${root}packages/${language}/dist/index.js';`).join("\n")+
+      :`import t${i} from ${JSON.stringify(`${root}packages/${language}/dist/index.js`)};`).join("\n")+
       `export const lexers={${selected.map((name,i)=>`${name}:t${i}${engine==="twinkleplop"?"()":""}`).join(",")}};`;
     const entry=`${directory}/${mask}-${engine}.entry.mjs`;
     const outfile=`${directory}/${mask}-${engine}.mjs`;

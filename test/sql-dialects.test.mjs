@@ -1,12 +1,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
 import generic from "../packages/sql/dist/index.js";
 import postgresql from "../packages/sql/dist/postgresql/index.js";
 import { tokenizeLines as postgresqlTokenizeLines } from "../packages/sql/dist/postgresql/index.js";
 import { highlightLines } from "../packages/terminal/dist/index.js";
 
-const root = new URL("../", import.meta.url).pathname;
+const root = fileURLToPath(new URL("../", import.meta.url));
 const reset = "\x1b[0m";
 const stringOnly = { string: "[S]" };
 
@@ -61,6 +62,16 @@ test("a tagged dollar-quoted string stays one string, with the same tag closing 
   assert.deepEqual(spans(generic, "$a$b$a$"), [["string", "$a$b"], ["string", "$a$"]]);
 });
 
+test("a dollar-quote tag may contain non-ASCII letters, as in PostgreSQL identifiers", () => {
+  assert.deepEqual(spans(postgresql, "SELECT $é$-- literal$é$ AS x"), [
+    ["keyword", "SELECT"],
+    ["string", "$é$-- literal"],
+    ["string", "$é$"],
+    ["keyword", "AS"],
+    ["identifier", "x"],
+  ]);
+});
+
 test("a numbered parameter is not mistaken for a dollar-quote tag", () => {
   assert.deepEqual(spans(postgresql, "$1, $2"), [["variable", "$1"], ["punctuation", ","], ["variable", "$2"]]);
 });
@@ -84,6 +95,20 @@ test("the default entry still reads @name, :name and ? as parameters", () => {
 
 test("PostgreSQL treats # as an operator instead of a line comment", () => {
   assert.deepEqual(spans(postgresql, "a # b"), [["identifier", "a"], ["operator", "#"], ["identifier", "b"]]);
+});
+
+test("PostgreSQL tokenizes a long chain of # operators in linear time", () => {
+  const source = "1" + " # 1".repeat(40000);
+  const started = performance.now();
+  const kinds = spans(postgresql, source).map(([kind]) => kind);
+  assert.equal(kinds.filter(kind => kind === "operator").length, 40000);
+  assert.ok(performance.now() - started < 1000, `took ${Math.round(performance.now() - started)} ms`);
+});
+
+test("PostgreSQL still reads #> and #>> as one operator", () => {
+  assert.deepEqual(spans(postgresql, "a #> b #>> c"), [
+    ["identifier", "a"], ["operator", "#>"], ["identifier", "b"], ["operator", "#>>"], ["identifier", "c"],
+  ]);
 });
 
 test("PostgreSQL does not quote identifiers with backticks", () => {
@@ -121,6 +146,10 @@ test("PostgreSQL line highlighting does not read a $ inside an identifier as a d
     "WHERE x = 1",
     "AND y = 2",
   ]);
+});
+
+test("PostgreSQL line highlighting reads a dollar-quote tag with non-ASCII letters", () => {
+  assert.deepEqual(render(["SELECT $é$-- a", "b$é$, 1"]), ["SELECT [S]$é$-- a", "[S]b$é$, 1"]);
 });
 
 test("PostgreSQL line highlighting keeps an E string open across an escaped quote and a line break", () => {

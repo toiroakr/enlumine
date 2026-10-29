@@ -26,7 +26,7 @@ test("generic rendering requires an explicit theme and honors an empty theme",()
 test("line tokenizers carry no ANSI codes and import no renderer",async()=>{
   for(const entry of ["sql/dist/index.js","graphql/dist/lexical.js"]) {
     const result=await build({stdin:{contents:`export {tokenizeLines} from './packages/${entry}';`,resolveDir:new URL("../",import.meta.url).pathname},bundle:true,write:false,metafile:true,platform:"node",format:"esm",minify:true});
-    assert.ok(!result.outputFiles[0].text.includes("[0m"),entry);
+    assert.ok(!/\[\d+(?:;\d+)*m|\x1b|\\x1b|\\u001b/.test(result.outputFiles[0].text),entry);
     assert.ok(Object.keys(result.metafile.inputs).every(path=>!path.includes("/terminal/")),entry);
   }
 });

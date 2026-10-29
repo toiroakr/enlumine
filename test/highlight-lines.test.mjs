@@ -2,6 +2,7 @@ import ansi from "../packages/terminal/dist/themes/ansi.js";
 import {test} from "node:test";
 import {build} from "esbuild";
 import assert from "node:assert/strict";
+import {fileURLToPath} from "node:url";
 
 import {highlightLines} from "../packages/terminal/dist/index.js";
 import {tokenizeLines as sqlLines} from "../packages/sql/dist/index.js";
@@ -137,9 +138,14 @@ test("GraphQL aliases select fields while schema colons still introduce types",(
 
 test("a bundle that imports only the SQL styles does not carry the GraphQL styles",async()=>{
   const bundle=async name=>(await build({
-    stdin:{contents:`export {${name}} from ${JSON.stringify(new URL("../packages/terminal/dist/themes/ansi.js",import.meta.url).pathname)};`,resolveDir:"/"},
+    stdin:{contents:`export {${name}} from ${JSON.stringify(fileURLToPath(new URL("../packages/terminal/dist/themes/ansi.js",import.meta.url)))};`,resolveDir:"/"},
     bundle:true,write:false,minify:true,format:"esm",platform:"node",target:"node22",
   })).outputFiles[0].text;
   assert.ok((await bundle("graphql")).includes("brace"));
   assert.ok(!(await bundle("sql")).includes("brace"));
+});
+
+test("a token kind named like an inherited property stays uncolored when the styles have no entry for it",()=>{
+  const tokenizeLines=lines=>lines.map(line=>({tokens:Uint32Array.of(0,0,line.length),token_types:["constructor"]}));
+  assert.deepEqual(highlightLines(["abc"],{tokenizeLines,styles:{}}),["abc"]);
 });

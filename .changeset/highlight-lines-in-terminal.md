@@ -1,4 +1,5 @@
 ---
+"@enlumine/core": minor
 "@enlumine/sql": minor
 "@enlumine/graphql": minor
 "@enlumine/terminal": minor

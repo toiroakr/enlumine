@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import sql from "../packages/sql/dist/index.js";
 import { tokenize, raw_grammar } from "@twinkleplop/sql";
 import { build } from "esbuild";
+import { hasTaggedDollarQuote } from "../scripts/token-tables.mjs";
 
 const reference=tokenize();
 
@@ -104,7 +105,7 @@ test("SQL vocabulary from the pinned upstream module retains classification in e
 test("SQL lexical execution preserves upstream probes, escapes, operators, and incomplete input", t => {
   let count=0;
   // Upstream does not know PostgreSQL's tagged dollar quoting ($tag$ ... $tag$); sql-dialects.test.mjs pins ours.
-  const check=source=>{if(/\$[A-Za-z_]\w*\$/.test(source))return;assert.deepEqual(sql(source),reference(source),JSON.stringify(source));count++;};
+  const check=source=>{const actual=sql(source);if(hasTaggedDollarQuote(actual,source))return;assert.deepEqual(actual,reference(source),JSON.stringify(source));count++;};
   for(let code=0;code<256;code++) for(const prefix of ["$","@","@@",":","?","e'","U&'","0x","1e","1."]) {
     check(prefix+String.fromCharCode(code)+"x");
     if(prefix==="$"||prefix==="@"||prefix==="@@")

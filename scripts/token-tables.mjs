@@ -126,3 +126,9 @@ export function differences(actual, expected, source) {
 }
 
 export const sameTables = (actual, expected, source) => differences(actual, expected, source)?.every(change => change.allowed) ?? false;
+
+export const hasTaggedDollarQuote = ({ tokens, token_types }, source) => {
+  for (let i = 0; i < tokens.length; i += 3)
+    if (token_types[tokens[i]] === "string" && /^\$[A-Za-z_\u0080-\uffff]/.test(source.slice(tokens[i + 1], tokens[i + 2]))) return true;
+  return false;
+};

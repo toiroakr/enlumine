@@ -125,15 +125,15 @@ function lex(source: string, dialect: Dialect): Uint32Array {
       emit(Kind.Punctuation, start, ++position);
       continue;
     }
+    if (first === 35 && !dialect.hash && source[start + 1] !== ">") {
+      emit(Kind.Operator, start, ++position);
+      continue;
+    }
     main.lastIndex = position;
     const text = main.exec(source)![0];
     position = main.lastIndex;
     if (text.startsWith("--") || (dialect.hash && first === 35 && text[1] !== ">")) {
       emit(Kind.Comment, start, position, true);
-    }
-    else if (first === 35 && text[1] !== ">") {
-      position = start + 1;
-      emit(Kind.Operator, start, position);
     }
     else if (text === "/*") {
       emit(Kind.Comment, start, position, true);
