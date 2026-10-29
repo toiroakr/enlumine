@@ -104,6 +104,8 @@ These APIs are tolerant display helpers. They do not validate complete documents
 
 `@enlumine/sql` accepts the quoting of every supported dialect at once: a backslash escapes inside `'...'`, `[name]` and `` `name` `` quote identifiers, and `#` starts a comment. A dialect entry applies only its own rules, and a bundler includes only the dialect you import.
 
+Unquoted identifiers may contain non-ASCII characters (`café`, `Ωmega`, `café$x`), as PostgreSQL and SQLite accept them. A Unicode space such as U+3000 or U+00A0 ends an identifier instead of joining it, and only a word spelled with ASCII letters can be a keyword.
+
 ```ts
 import { highlightLines } from "@enlumine/terminal";
 import ansi from "@enlumine/terminal/themes/ansi";

@@ -136,4 +136,13 @@ export const hasTaggedDollarQuote = ({ tokens, token_types }, source) => {
   return false;
 };
 
-export const dollarQuoteDiffersFromUpstream = (actual, source) => hasTaggedDollarQuote(actual, source) || /[\u0080-\uffff]\$\$/.test(source);
+export const hasNonAsciiIdentifier = ({ tokens, token_types }, source) => {
+  for (let i = 0; i < tokens.length; i += 3) {
+    if (token_types[tokens[i]] !== "identifier" && token_types[tokens[i]] !== "function") continue;
+    const text = source.slice(tokens[i + 1], tokens[i + 2]);
+    if (!/^["`[]/.test(text) && /[^\0-\x7f]/.test(text)) return true;
+  }
+  return false;
+};
+
+export const differsFromUpstream = (actual, source) => hasTaggedDollarQuote(actual, source) || hasNonAsciiIdentifier(actual, source);

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import sql from "../packages/sql/dist/index.js";
 import { tokenize, raw_grammar } from "@twinkleplop/sql";
 import { build } from "esbuild";
-import { hasTaggedDollarQuote, dollarQuoteDiffersFromUpstream } from "../scripts/token-tables.mjs";
+import { hasTaggedDollarQuote, hasNonAsciiIdentifier, differsFromUpstream } from "../scripts/token-tables.mjs";
 
 const reference=tokenize();
 
@@ -32,8 +32,10 @@ test("fresh SQL tokenizers preserve upstream type tables before and after their 
   for(const [index,first] of ["", "-- comment", "SELECT 1", "Key"].entries()) {
     const load=async result=>(await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].contents).toString("base64")}#${index}`)).default;
     const own=await load(actual),upstream=await load(expected);
-    for(const source of [first,"","SELECT TRUE, UUID, CURSOR, f(x)","unknown_identifier"])
-      assert.deepEqual(own(source),upstream(source),JSON.stringify(source));
+    for(const source of [first,"","SELECT TRUE, UUID, CURSOR, f(x)","unknown_identifier"]) {
+      const actual=own(source),expected=upstream(source);
+      if(!differsFromUpstream(actual,source))assert.deepEqual(actual,expected,JSON.stringify(source));
+    }
     const result=own("SELECT 1");
     result.token_types.length=0;
     assert.deepEqual(own("SELECT 1"),upstream("SELECT 1"));
@@ -75,8 +77,10 @@ test("SQL word classification preserves case folding, duplicate priority, and qu
   const words=["select","from","where","cursor","timestamp","null","true","unknown","varchar","key","current_timestamp","not_a_keyword"];
   for(const word of words) for(const source of [word,word.toUpperCase(),word[0].toUpperCase()+word.slice(1),`\"${word}\"`,`\`${word}\``,`[${word}]`])
     assert.deepEqual(sql(source),reference(source),source);
-  for(const source of ["Key","SELECT İstanbul, ſelect, Énum, ıf;","SELECT CURSOR, cursor(), NULL, unknown, VARCHAR(20);"])
-    assert.deepEqual(sql(source),reference(source),source);
+  for(const source of ["Key","SELECT İstanbul, ſelect, Énum, ıf;","SELECT CURSOR, cursor(), NULL, unknown, VARCHAR(20);"]) {
+    const actual=sql(source),expected=reference(source);
+    if(!differsFromUpstream(actual,source))assert.deepEqual(actual,expected,source);
+  }
   assert.equal(nameOfFirst("CURSOR"),"type");
   assert.equal(nameOfFirst("UNKNOWN"),"boolean");
 });
@@ -104,8 +108,8 @@ test("SQL vocabulary from the pinned upstream module retains classification in e
 
 test("SQL lexical execution preserves upstream probes, escapes, operators, and incomplete input", t => {
   let count=0;
-  // Upstream does not know PostgreSQL's tagged dollar quoting ($tag$ ... $tag$) or that a $ after a non-ASCII letter continues an identifier; sql-dialects.test.mjs pins ours.
-  const check=source=>{const actual=sql(source);if(dollarQuoteDiffersFromUpstream(actual,source))return;assert.deepEqual(actual,reference(source),JSON.stringify(source));count++;};
+  // Upstream knows neither PostgreSQL's tagged dollar quoting ($tag$ ... $tag$) nor non-ASCII identifier characters; sql-dialects.test.mjs pins ours.
+  const check=source=>{const actual=sql(source);if(differsFromUpstream(actual,source))return;assert.deepEqual(actual,reference(source),JSON.stringify(source));count++;};
   for(let code=0;code<256;code++) for(const prefix of ["$","@","@@",":","?","e'","U&'","0x","1e","1."]) {
     check(prefix+String.fromCharCode(code)+"x");
     if(prefix==="$"||prefix==="@"||prefix==="@@")
@@ -130,4 +134,11 @@ test("the exemption for dollar-quoted strings does not skip ordinary strings tha
     assert.equal(hasTaggedDollarQuote(sql(source),source),false,source);
   for(const source of ["SELECT $t$x$t$","SELECT 1, $é$x$é$ FROM t"])
     assert.equal(hasTaggedDollarQuote(sql(source),source),true,source);
+});
+
+test("the exemption for non-ASCII identifiers skips only unquoted identifiers that contain them",()=>{
+  for(const source of ["SELECT café","SELECT \u540d\u524d(1)","a\u3000\u540d\u524d"])
+    assert.equal(hasNonAsciiIdentifier(sql(source),source),true,source);
+  for(const source of ['SELECT "café"',"SELECT `\u540d\u524d`","SELECT [\u540d\u524d]","SELECT 'café'","SELECT /* \u540d\u524d */ 1","SELECT café_ok".replace("é","e")])
+    assert.equal(hasNonAsciiIdentifier(sql(source),source),false,source);
 });

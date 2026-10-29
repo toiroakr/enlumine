@@ -18,8 +18,12 @@ const wordTypes = [Kind.Boolean, Kind.Type, Kind.Keyword];
 const words = new Map<string, number>();
 for (let group = 0; group < wordGroups.length; group++)
   for (const word of wordGroups[group].split(" ")) words.set(word, wordTypes[group]);
+function space(code: number): boolean {
+  return code === 160 || code === 5760 || (code >= 8192 && code <= 8202) || code === 8232 || code === 8233
+    || code === 8239 || code === 8287 || code === 12288 || code === 65279;
+}
 function identifier(code: number): boolean {
-  return code === 95 || (code >= 65 && code <= 90) || (code >= 97 && code <= 122);
+  return code === 95 || (code >= 65 && code <= 90) || (code >= 97 && code <= 122) || (code >= 128 && !space(code));
 }
 function lex(source: string, dialect: Dialect): Uint32Array {
   const slots = source.length * 3;
@@ -27,7 +31,7 @@ function lex(source: string, dialect: Dialect): Uint32Array {
     scratch = new Uint32Array(Math.min(1048576, Math.max(slots, scratch.length * 2)));
   const tokens = slots <= scratch.length ? scratch : new Uint32Array(slots);
   let count = 0;
-  let position = 0, lastType = -1, rejectedEnd = -1;
+  let position = 0, lastType = -1;
   function emit(kind: Kind, start: number, end: number, sealed = false) {
     if (end > start) {
       const type = kind;
@@ -157,10 +161,6 @@ function lex(source: string, dialect: Dialect): Uint32Array {
         }
       }
     }
-    else if (first === 36 && text.length > 1 && text.endsWith("$") && (start === rejectedEnd || /[\u0080-\uffff]/.test(source[start - 1] ?? ""))) {
-      rejectedEnd = position = start + 1;
-      emit(Kind.Operator, start, position);
-    }
     else if (first === 36 && text.length > 1 && text.endsWith("$")) {
       const close = source.indexOf(text, position);
       emit(Kind.String, start, position, true);
@@ -210,7 +210,8 @@ function tokenizeTokens(source: string, dialect: Dialect): Uint32Array {
     if (length >= min && length <= max) {
       const first = source.charCodeAt(start);
       if (first !== 34 && first !== 96 && first !== 91) {
-        const type = words.get(source.slice(start, end).toLowerCase());
+        const word = source.slice(start, end);
+        const type = /[^\0-\x7f]/.test(word) ? undefined : words.get(word.toLowerCase());
         if (type) {
           tokens[i] = type;
           continue;

@@ -104,7 +104,7 @@ export async function sqlLexicalData() {
   const operators=raw.states.main.rules.find(rule=>rule.token==="operator").match
     .filter(text=>text.length>1).toSorted((a,b)=>b.length-a.length).map(escape).join("|");
   const numeric=String.raw`0x[\da-f_]*|0b[01_]*|0o[0-7_]*|[\d_]+(?:\.[\d_]*)?(?:e[+-]?\d*)?`;
-  const main=String.raw`--[^\n]*(?:\n|$)|\/\*|@@?[A-Za-z_][\w$]*|${operators}|#[^\n]*(?:\n|$)|\$[A-Za-z_\u0080-￿][\w\u0080-￿]*\$|\$\$|\$\d+|:[\w$]*|\?\d*|[\s\S]`;
+  const main=String.raw`--[^\n]*(?:\n|$)|\/\*|@@?[A-Za-z_][\w$]*|${operators}|#[^\n]*(?:\n|$)|\$(?:[A-Za-z_]|(?!\s)[\u0080-￿])(?:\w|(?!\s)[\u0080-￿])*\$|\$\$|\$\d+|:[\w$]*|\?\d*|[\s\S]`;
   let contents=`export const wordGroups=${JSON.stringify(data.word_groups)};\n`;
   contents+=`export const tokenTypes=${JSON.stringify(tokenNames)};\n`;
   const members=tokenNames.concat("keyword","boolean","type").map((name,index)=>name.split("_").map(part=>part[0].toUpperCase()+part.slice(1)).join("")+"="+index);
