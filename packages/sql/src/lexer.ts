@@ -157,7 +157,7 @@ function lex(source: string, dialect: Dialect): Uint32Array {
         }
       }
     }
-    else if (first === 36 && text.length > 2 && text.endsWith("$") && /[\w$\u0080-\uffff]/.test(source[start - 1] ?? "")) {
+    else if (first === 36 && text.length > 1 && text.endsWith("$") && /[\u0080-\uffff]/.test(source[start - 1] ?? "")) {
       position = start + 1;
       emit(Kind.Operator, start, position);
     }

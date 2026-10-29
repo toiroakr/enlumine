@@ -77,6 +77,12 @@ test("a dollar-quote tag right after a non-ASCII identifier character does not o
   assert.deepEqual(spans(postgresql, "SELECT café$tag$x FROM t").at(-1), ["identifier", "t"]);
 });
 
+test("an untagged $$ right after a non-ASCII identifier character does not open a string", () => {
+  assert.ok(!spans(postgresql, "SELECT café$$ FROM t").some(([kind]) => kind === "string"));
+  assert.ok(!spans(generic, "SELECT café$$ FROM t").some(([kind]) => kind === "string"));
+  assert.deepEqual(spans(postgresql, "SELECT $$x$$").filter(([kind]) => kind === "string"), [["string", "$$x"], ["string", "$$"]]);
+});
+
 test("a numbered parameter is not mistaken for a dollar-quote tag", () => {
   assert.deepEqual(spans(postgresql, "$1, $2"), [["variable", "$1"], ["punctuation", ","], ["variable", "$2"]]);
 });
@@ -159,6 +165,10 @@ test("PostgreSQL line highlighting reads a dollar-quote tag with non-ASCII lette
 
 test("PostgreSQL line highlighting does not open a dollar-quoted string after a non-ASCII identifier character", () => {
   assert.deepEqual(render(["SELECT café$tag$x FROM t", "WHERE 1"]), ["SELECT café$tag$x FROM t", "WHERE 1"]);
+});
+
+test("PostgreSQL line highlighting does not open an untagged $$ string after a non-ASCII identifier character", () => {
+  assert.deepEqual(render(["SELECT café$$ FROM t", "WHERE 1"]), ["SELECT café$$ FROM t", "WHERE 1"]);
 });
 
 test("PostgreSQL line highlighting keeps an E string open across an escaped quote and a line break", () => {

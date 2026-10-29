@@ -3,7 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { highlight, resolveLanguage } from "../packages/enlumine/dist/index.js";
-import { sameTables, hasTaggedDollarQuote } from "../scripts/token-tables.mjs";
+import { sameTables, dollarQuoteDiffersFromUpstream } from "../scripts/token-tables.mjs";
 
 const fixtures = {
   json: [
@@ -111,8 +111,8 @@ for (const [language, samples] of Object.entries(fixtures)) {
     for (const source of inputs) {
       const expected = reference(source);
       const actual = runtime(source);
-      // Upstream does not know PostgreSQL's tagged dollar quoting ($tag$ ... $tag$); sql-dialects.test.mjs pins ours.
-      if (language === "sql" && hasTaggedDollarQuote(actual, source)) continue;
+      // Upstream does not know PostgreSQL's tagged dollar quoting ($tag$ ... $tag$) or that a $ after a non-ASCII letter continues an identifier; sql-dialects.test.mjs pins ours.
+      if (language === "sql" && dollarQuoteDiffersFromUpstream(actual, source)) continue;
       if (language === "typescript") assert.ok(sameTables(actual, expected, source), JSON.stringify({ language, source }));
       else {
         assert.deepEqual(actual.tokens, expected.tokens, JSON.stringify({ language, source }));
