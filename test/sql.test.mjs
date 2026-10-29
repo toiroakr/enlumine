@@ -150,9 +150,9 @@ test("the exemption for dollar-quoted strings does not skip ordinary strings tha
 });
 
 test("the exemption for non-ASCII identifiers looks at the unquoted parts of a token that merges quoted and unquoted parts",()=>{
-  for(const source of ['x"café"',"x`café`","x[café]",'"café"x','U&"café"','u&"café"'])
+  for(const source of ['x"café"',"x`café`","x[café]",'"café"x','U&"café"','u&"café"',"[x]]café]",'"x""é"','x"a""é"',"`a``é`"])
     assert.equal(hasNonAsciiIdentifier(sql(source),source),false,source);
-  for(const source of ['"x"café',"`x`café","[x]café",'x"y"é'])
+  for(const source of ['"x"café',"`x`café","[x]café",'x"y"é','"x""y"é',"[x]]y]é"])
     assert.equal(hasNonAsciiIdentifier(sql(source),source),true,source);
 });
 

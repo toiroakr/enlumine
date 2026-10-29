@@ -139,11 +139,37 @@ export const hasTaggedDollarQuote = ({ tokens, token_types }, source) => {
   return false;
 };
 
+const identifierKinds = new Set(["identifier", "function", "variable"]);
+
+// Adjacent identifier tokens are one name, and an escaped quote ("" or ]]) splits a quoted name into separate tokens,
+// so quotes are followed over the whole run instead of per token.
+const hasUnquotedNonAscii = (text) => {
+  const closers = { '"': '"', "`": "`", "[": "]" };
+  for (let i = 0; i < text.length; i++) {
+    const closer = closers[text[i]];
+    if (closer === undefined) {
+      if (text.charCodeAt(i) > 127) return true;
+      continue;
+    }
+    for (i++; i < text.length; i++) {
+      if (text[i] !== closer) continue;
+      if (text[i + 1] !== closer) break;
+      i++;
+    }
+  }
+  return false;
+};
+
 export const hasNonAsciiIdentifier = ({ tokens, token_types }, source) => {
-  for (let i = 0; i < tokens.length; i += 3) {
-    if (!["identifier", "function", "variable"].includes(token_types[tokens[i]])) continue;
-    const unquoted = source.slice(tokens[i + 1], tokens[i + 2]).replace(/"(?:[^"]|"")*"?|`[^`]*`?|\[[^\]]*\]?/g, "");
-    if (/[^\0-\x7f]/.test(unquoted)) return true;
+  for (let i = 0; i < tokens.length; ) {
+    if (!identifierKinds.has(token_types[tokens[i]])) {
+      i += 3;
+      continue;
+    }
+    const start = tokens[i + 1];
+    let end = tokens[i + 2];
+    for (i += 3; i < tokens.length && tokens[i + 1] === end && identifierKinds.has(token_types[tokens[i]]); i += 3) end = tokens[i + 2];
+    if (hasUnquotedNonAscii(source.slice(start, end))) return true;
   }
   return false;
 };
