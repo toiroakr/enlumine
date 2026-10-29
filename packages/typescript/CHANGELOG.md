@@ -1,5 +1,12 @@
 # @enlumine/typescript
 
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [acce515]
+  - @enlumine/core@0.2.0
+
 ## 0.2.0
 
 ### Minor Changes
