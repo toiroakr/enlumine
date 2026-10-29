@@ -65,6 +65,21 @@ test("a numbered parameter is not mistaken for a dollar-quote tag", () => {
   assert.deepEqual(spans(postgresql, "$1, $2"), [["variable", "$1"], ["punctuation", ","], ["variable", "$2"]]);
 });
 
+test("PostgreSQL has no @name, :name or ? parameters: they are operators followed by an operand", () => {
+  assert.deepEqual(spans(postgresql, "a @ b, @x"), [
+    ["identifier", "a"], ["operator", "@"], ["identifier", "b"], ["punctuation", ","], ["operator", "@"], ["identifier", "x"],
+  ]);
+  assert.deepEqual(spans(postgresql, "a[1:2]"), [
+    ["identifier", "a"], ["punctuation", "["], ["number", "1"], ["operator", ":"], ["number", "2"], ["punctuation", "]"],
+  ]);
+  assert.deepEqual(spans(postgresql, "'{}'::jsonb ? 'a'").slice(-2), [["operator", "?"], ["string", "'a'"]]);
+  assert.deepEqual(spans(postgresql, "$1"), [["variable", "$1"]]);
+});
+
+test("the default entry still reads @name, :name and ? as parameters", () => {
+  assert.deepEqual(spans(generic, "@x :y ?"), [["variable", "@x"], ["variable", ":y"], ["identifier", "?"]]);
+});
+
 test("PostgreSQL treats # as an operator instead of a line comment", () => {
   assert.deepEqual(spans(postgresql, "a # b"), [["identifier", "a"], ["operator", "#"], ["identifier", "b"]]);
 });

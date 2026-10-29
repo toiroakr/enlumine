@@ -6,6 +6,7 @@ export interface Dialect {
   backslash: boolean;
   escapePrefix: string;
   hash: boolean;
+  sigils: string;
 }
 const enum Escape { None, Backslash, Sequences }
 let scratch = new Uint32Array(4096);
@@ -170,6 +171,10 @@ function lex(source: string, dialect: Dialect): Uint32Array {
     else if (first === 36) {
       dollarProbe.lastIndex = start + 1;
       emit(dollarProbe.test(source) ? Kind.Variable : Kind.Operator, start, position);
+    }
+    else if ((first === 64 || first === 58 || first === 63) && !dialect.sigils.includes(text[0]) && !["@>", "@@", "::", ":=", "?|", "?&"].includes(text)) {
+      position = start + 1;
+      emit(Kind.Operator, start, position);
     }
     else if (first === 64) {
       const doubled = text.startsWith("@@");
