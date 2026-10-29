@@ -116,6 +116,7 @@ try {
     import assert from 'node:assert/strict';
     import {tokenizeFragment} from '@enlumine/graphql';
     import {tokenizeLexically, tokenizeLines} from '@enlumine/graphql/lexical';
+    import {tokenizeLines as sqlLines} from '@enlumine/sql';
     import {highlightLines} from '@enlumine/terminal';
     import ansi from '@enlumine/terminal/themes/ansi';
     const source='user(id: $id) { name }';
@@ -126,6 +127,7 @@ try {
     assert.equal(tokenizeLexically('"unfinished'),undefined);
     assert.equal(tokenizeLexically('user(id: $id)').token_types[0],'name');
     assert.ok(highlightLines(['query { field(arg: "unfinished'],{tokenizeLines,styles:ansi.graphql})[0].includes('\\x1b[32m"unfinished\\x1b[0m'));
+    assert.ok(highlightLines(['SELECT 1 /* comment','end */'],{tokenizeLines:sqlLines,styles:ansi.sql})[0].includes('\\x1b[34mSELECT\\x1b[0m'));
   `],consumer);
   for (const name of ["typescript", "json", "graphql"])
     await rm(resolve(consumer, "node_modules/@enlumine", name), {recursive:true,force:true});
