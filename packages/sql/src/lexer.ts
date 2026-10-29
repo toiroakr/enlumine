@@ -27,7 +27,7 @@ function lex(source: string, dialect: Dialect): Uint32Array {
     scratch = new Uint32Array(Math.min(1048576, Math.max(slots, scratch.length * 2)));
   const tokens = slots <= scratch.length ? scratch : new Uint32Array(slots);
   let count = 0;
-  let position = 0, lastType = -1;
+  let position = 0, lastType = -1, rejectedEnd = -1;
   function emit(kind: Kind, start: number, end: number, sealed = false) {
     if (end > start) {
       const type = kind;
@@ -157,8 +157,8 @@ function lex(source: string, dialect: Dialect): Uint32Array {
         }
       }
     }
-    else if (first === 36 && text.length > 1 && text.endsWith("$") && /[\u0080-\uffff]/.test(source[start - 1] ?? "")) {
-      position = start + 1;
+    else if (first === 36 && text.length > 1 && text.endsWith("$") && (start === rejectedEnd || /[\u0080-\uffff]/.test(source[start - 1] ?? ""))) {
+      rejectedEnd = position = start + 1;
       emit(Kind.Operator, start, position);
     }
     else if (first === 36 && text.length > 1 && text.endsWith("$")) {
