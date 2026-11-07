@@ -39,7 +39,7 @@ jobs:
           node-version: ${{ matrix.node }}
           package-manager-cache: false
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile && pnpm -r peers check --lockfile-only
       - name: Build and test
         run: pnpm test
       - name: Check types
