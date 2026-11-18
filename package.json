@@ -1,12 +1,18 @@
 {
   "name": "enlumine-workspace",
   "version": "0.0.0",
+  "private": true,
   "description": "A syntax highlighter for terminals",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toiroakr/enlumine.git"
+  },
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",
     "check": "tsc --noEmit",
-    "test": "pnpm build && node --test test/*.test.mjs && node scripts/check-bundle-sizes.mjs",
+    "test": "node --test .github/scripts/test-lockfile-runtime-diff.mjs && pnpm build && node --test test/*.test.mjs && node scripts/check-bundle-sizes.mjs",
     "test:highlight-lines": "pnpm build && node --test test/highlight-lines.test.mjs",
     "test:compatibility": "pnpm build && node --test test/compatibility.test.mjs test/json.test.mjs test/sql.test.mjs test/graphql-lexical.test.mjs",
     "smoke:packages": "pnpm build && node scripts/smoke-packages.mjs",
@@ -17,10 +23,6 @@
     "release": "pnpm build && changeset publish",
     "bootstrap:publish": "pnpm build && node scripts/bootstrap-publish.mjs",
     "trust:configure": "node scripts/configure-trusted-publishing.mjs"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/toiroakr/enlumine.git"
   },
   "devDependencies": {
     "@changesets/cli": "3.0.3",
@@ -39,7 +41,5 @@
     "terser": "5.51.2",
     "typescript": "^5.9.0"
   },
-  "private": true,
-  "packageManager": "pnpm@12.21.0",
-  "license": "MIT"
+  "packageManager": "pnpm@12.21.0"
 }
