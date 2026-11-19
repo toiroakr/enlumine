@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
 import json from "../packages/json/dist/index.js";
 import typescript from "../packages/typescript/dist/index.js";
@@ -7,7 +8,7 @@ import { highlight } from "../packages/html/dist/index.js";
 import dark from "../packages/html/dist/themes/dark.js";
 import light from "../packages/html/dist/themes/light.js";
 
-const root = new URL("../", import.meta.url).pathname;
+const root = fileURLToPath(new URL("../", import.meta.url));
 
 test("wraps each token in a span classed by its kind and leaves plain text bare", () => {
   assert.equal(

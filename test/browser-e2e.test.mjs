@@ -16,9 +16,10 @@ test(
     try {
       const page = await buildFixture(directory);
       const dom = await runChrome(chrome, ["--dump-dom", pathToFileURL(page).href]);
+      const match = dom.match(/<pre id="report">([\s\S]*?)<\/pre>/);
+      assert.ok(match, `Browser page rendered no report:\n${dom}`);
       const report = JSON.parse(
-        dom
-          .match(/<pre id="report">([\s\S]*?)<\/pre>/)[1]
+        match[1]
           .replace(/&lt;/g, "<")
           .replace(/&gt;/g, ">")
           .replace(/&amp;/g, "&"),

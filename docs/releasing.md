@@ -48,7 +48,7 @@ No npm token is stored in GitHub secrets.
 
 ## Adding a package later
 
-The release workflow publishes through trusted publishing, which npm only allows for a package that already exists. Register a package added after the initial registration (for example `@enlumine/html`) by hand before its first release: log in to npm, publish its `0.0.0` archive with the `bootstrap` tag (`pnpm pack` in the package directory, then `npm publish <archive> --access=public --tag=bootstrap --provenance=false`), and run `pnpm trust:configure --package=@enlumine/html`. `pnpm bootstrap:publish` cannot be used because it asserts that every package is still at `0.0.0`.
+The release workflow publishes through trusted publishing, which npm only allows for a package that already exists. Register a package added after the initial registration (for example `@enlumine/html`) by hand before its first release: log in to npm, run `pnpm build` from the workspace root, publish its `0.0.0` archive with the `bootstrap` tag (`pnpm pack` in the package directory, then `npm publish <archive> --access=public --tag=bootstrap --provenance=false`), and run `pnpm trust:configure --package=@enlumine/html`. `pnpm bootstrap:publish` cannot be used because it asserts that every package is still at `0.0.0`.
 
 ## GitHub configuration
 
