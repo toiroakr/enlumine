@@ -468,7 +468,7 @@ const plugin = {
   },
 };
 
-const packages = ["core", ...languages, "terminal", "html", "enlumine"];
+const packages = ["core", ...languages, "terminal", "html", "react", "enlumine"];
 for (const name of packages)
   await rm(resolve(outputRoot, "packages", name, "dist"), { recursive: true, force: true });
 await rm(resolve(generated, "types"), { recursive: true, force: true });
@@ -499,7 +499,7 @@ for (const name of packages) {
     target: "node22",
     minify: true,
     metafile: true,
-    external: ["@enlumine/*"],
+    external: ["@enlumine/*", "react"],
     plugins: [plugin],
     legalComments: "eof",
     tsconfigRaw: { compilerOptions: {} },
@@ -531,7 +531,7 @@ for (const name of packages) {
       throw new Error(`Runtime compiler retained in ${path}`);
     for (const imported of output.imports) {
       const dependency = imported.path.split("/").slice(0, imported.path.startsWith("@") ? 2 : 1).join("/");
-      if (imported.external && !imported.path.startsWith("node:") && !manifest.dependencies?.[dependency])
+      if (imported.external && !imported.path.startsWith("node:") && !manifest.dependencies?.[dependency] && !manifest.peerDependencies?.[dependency])
         throw new Error(`Undeclared runtime dependency in ${name}: ${imported.path}`);
     }
   }

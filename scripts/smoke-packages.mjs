@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
-const packages = ["core", "json", "typescript", "sql", "graphql", "terminal", "html", "enlumine"];
+const packages = ["core", "json", "typescript", "sql", "graphql", "terminal", "html", "react", "enlumine"];
 const destination = resolve(root, ".generated/tarballs");
 await mkdir(destination, { recursive: true });
 function run(command, args, cwd, input) {
@@ -67,7 +67,7 @@ try {
   `);
   run(process.execPath, [resolve(root, "node_modules/typescript/bin/tsc"), "--noEmit", "--strict", "--target", "ES2022", "--module", "NodeNext", "--moduleResolution", "NodeNext", "consumer.mts"], minimal);
   await writeFile(resolve(consumer, "package.json"), '{"private":true,"type":"module"}');
-  run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", ...["core", "json", "terminal", "html"].map(name => archives.get(name))], consumer);
+  run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", ...["core", "json", "terminal", "html", "react"].map(name => archives.get(name)), "react-dom"], consumer);
   run(process.execPath, ["--input-type=module", "-e", `
     import assert from 'node:assert/strict';
     import tokenizeJson from '@enlumine/json';
@@ -77,8 +77,12 @@ try {
     import { highlight as renderHtml } from '@enlumine/html';
     import htmlDark from '@enlumine/html/themes/dark';
     import htmlLight from '@enlumine/html/themes/light';
+    import { Highlight } from '@enlumine/react';
+    import { createElement } from 'react';
+    import { renderToStaticMarkup } from 'react-dom/server';
     const source = '{"active":true,"count":42}';
     assert.ok(renderHtml(source, {tokenizer:tokenizeJson}).includes('<span class="enl-'));
+    assert.ok(renderToStaticMarkup(createElement(Highlight, {source:'{"a":1}',tokenizer:tokenizeJson})).includes('<span class="enl-'));
     assert.ok(htmlDark.includes('.enlumine') && htmlLight.includes('.enlumine') && htmlDark !== htmlLight);
     assert.ok(highlight(source, {theme:dark,tokenizer:tokenizeJson}).includes('\\x1b['));
     assert.equal(highlight(source, {theme:dark,tokenizer:tokenizeJson,colorLevel:0}), source);

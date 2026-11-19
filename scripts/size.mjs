@@ -1,7 +1,7 @@
 import { readFile, readdir } from "node:fs/promises";
 import { gzipSync } from "node:zlib";
 
-const packages = ["core", "json", "typescript", "sql", "graphql", "terminal", "html", "enlumine"];
+const packages = ["core", "json", "typescript", "sql", "graphql", "terminal", "html", "react", "enlumine"];
 const sizes = [];
 for (const name of packages) {
   const directory = new URL(`../packages/${name}/dist/`, import.meta.url);

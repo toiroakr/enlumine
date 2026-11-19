@@ -14,7 +14,7 @@ pnpm test
 pnpm smoke:packages
 ```
 
-The workspace contains eight packages. Package names describe the distribution layout; npm publication is a separate step. Builds emit JavaScript and declarations into each package's `dist/` directory. Generated build metadata and local measurements stay in `.generated/`.
+The workspace contains nine packages. Package names describe the distribution layout; npm publication is a separate step. Builds emit JavaScript and declarations into each package's `dist/` directory. Generated build metadata and local measurements stay in `.generated/`.
 
 ## Packages
 
@@ -27,6 +27,7 @@ The workspace contains eight packages. Package names describe the distribution l
 | `@enlumine/graphql` | GraphQL tokenizer, fragment contexts, lexical scanning, line rendering | core |
 | `@enlumine/terminal` | ANSI rendering and separate theme modules | core |
 | `@enlumine/html` | HTML rendering and CSS-variable theme modules; usable in browsers with the JSON tokenizer | core |
+| `@enlumine/react` | A React component that renders tokens as elements without `dangerouslySetInnerHTML`; styled by the `@enlumine/html` themes | core |
 | `enlumine` | Convenience API and CLI with all four languages | core, terminal, language packages |
 
 Each package has its own manifest, exports, declarations, and tarball. The workspace root has `private: true` and is not an npm package.
@@ -183,7 +184,7 @@ Core contains no language data, ANSI rendering, or upstream reclassification hel
 
 `pnpm size` reports the sum of published JavaScript file sizes and per-file gzip sizes. These exclude declarations, notices, and dependency packages and are distinct from application bundle sizes.
 
-`pnpm smoke:packages` packs all eight packages, installs them into temporary consumers, and checks independent language imports, public TypeScript declarations, theme separation, and the CLI. It requires npm access to resolve the consumer's package installation.
+`pnpm smoke:packages` packs all nine packages, installs them into temporary consumers, and checks independent language imports, public TypeScript declarations, theme separation, and the CLI. It requires npm access to resolve the consumer's package installation.
 
 Third-party copyright and permission notices are retained in `THIRD_PARTY_NOTICES.txt` and included in every package archive.
 
