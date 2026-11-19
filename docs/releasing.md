@@ -1,6 +1,6 @@
 # Publishing packages
 
-The seven packages are published independently from this repository with Changesets.
+The eight packages are published independently from this repository with Changesets.
 Normal releases use npm Trusted Publishing through `.github/workflows/release.yml`.
 No npm token is stored in GitHub secrets.
 
@@ -43,8 +43,12 @@ No npm token is stored in GitHub secrets.
 
    If setup is interrupted, resume a remaining package with `pnpm trust:configure --package=@enlumine/sql`. The equivalent settings can be entered on npm's package settings page. Keep the environment name identical in GitHub and npm. A new trust configuration must complete a successful publish within two days; recreate an expired configuration before retrying.
 
-7. Merge the initial version PR after all seven trust configurations exist. Its changeset advances every package to `0.1.0`. The main-branch release workflow builds and checks the packages before publishing them through OIDC with the `latest` tag.
-8. Confirm all seven versions, dependency versions, and trusted publisher settings on npm. After a successful tokenless release, package settings can disallow token-based publishing while requiring two-factor authentication for manual operations.
+7. Merge the initial version PR after all eight trust configurations exist. Its changeset advances every package to `0.1.0`. The main-branch release workflow builds and checks the packages before publishing them through OIDC with the `latest` tag.
+8. Confirm all eight versions, dependency versions, and trusted publisher settings on npm. After a successful tokenless release, package settings can disallow token-based publishing while requiring two-factor authentication for manual operations.
+
+## Adding a package later
+
+The release workflow publishes through trusted publishing, which npm only allows for a package that already exists. Register a package added after the initial registration (for example `@enlumine/html`) by hand before its first release: log in to npm, publish its `0.0.0` archive with the `bootstrap` tag (`pnpm pack` in the package directory, then `npm publish <archive> --access=public --tag=bootstrap --provenance=false`), and run `pnpm trust:configure --package=@enlumine/html`. `pnpm bootstrap:publish` cannot be used because it asserts that every package is still at `0.0.0`.
 
 ## GitHub configuration
 

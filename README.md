@@ -182,7 +182,7 @@ Core contains no language data, ANSI rendering, or upstream reclassification hel
 
 `pnpm size` reports the sum of published JavaScript file sizes and per-file gzip sizes. These exclude declarations, notices, and dependency packages and are distinct from application bundle sizes.
 
-`pnpm smoke:packages` packs all seven packages, installs them into temporary consumers, and checks independent language imports, public TypeScript declarations, theme separation, and the CLI. It requires npm access to resolve the consumer's package installation.
+`pnpm smoke:packages` packs all eight packages, installs them into temporary consumers, and checks independent language imports, public TypeScript declarations, theme separation, and the CLI. It requires npm access to resolve the consumer's package installation.
 
 Third-party copyright and permission notices are retained in `THIRD_PARTY_NOTICES.txt` and included in every package archive.
 
