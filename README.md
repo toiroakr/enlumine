@@ -62,7 +62,7 @@ Colored lines reset their foreground before LF, CRLF, lone CR, or the end of inp
 
 ## Highlight in the browser
 
-`@enlumine/core` has a `browser` export condition, so bundlers for the web resolve a build without `node:zlib`. Packed grammars are brotli-compressed and can only be loaded in Node.js, so `@enlumine/typescript` and the `@enlumine/graphql` document entry do not run in browsers yet. The JSON and SQL tokenizers (including `@enlumine/sql/postgresql`) and the `@enlumine/graphql/lexical` entry do not use a packed grammar and work.
+`@enlumine/core` has a `browser` export condition, so bundlers for the web resolve a build without `node:zlib`. Packed grammars are brotli-compressed and can only be loaded in Node.js, so `@enlumine/typescript` and the `@enlumine/graphql` document entry do not run in browsers yet. The JSON and SQL tokenizers (including `@enlumine/sql/postgresql`) and the `@enlumine/graphql/lexical` entry do not use a packed grammar and work (the lexical entry does not export a `Tokenizer` that `@enlumine/html` accepts directly; see the `@enlumine/html` README).
 
 ```ts
 import json from "@enlumine/json";
@@ -71,11 +71,12 @@ import dark from "@enlumine/html/themes/dark";
 
 document.head.append(Object.assign(document.createElement("style"), { textContent: dark }));
 const pre = Object.assign(document.createElement("pre"), { className: "enlumine" });
+Object.assign(pre.style, { background: "#1e1e2e", color: "#d6deeb" });
 pre.innerHTML = highlight('{"ok": true}', { tokenizer: json });
 document.body.append(pre);
 ```
 
-`highlight` wraps every token except plain text in `<span class="enl-<kind>">` (underscores in the kind become hyphens, `classPrefix` replaces `enl-`; the bundled themes style only `enl-`) and escapes `& < > " '` in the text and in the class value. A theme is a CSS string that sets `--enl-<kind>` variables on `.enlumine` and colors the matching classes. `@enlumine/html/themes/dark` and `@enlumine/html/themes/light` carry the same palettes as the terminal themes.
+`highlight` wraps every token except plain text in `<span class="enl-<kind>">` (underscores in the kind become hyphens, `classPrefix` replaces `enl-`; the bundled themes style only `enl-`) and escapes `& < > " '` in the text and in the class value. A theme is a CSS string that sets `--enl-<kind>` variables on `.enlumine` and colors the matching classes; it sets token colors only, so give the container a matching background and base text color. `@enlumine/html/themes/dark` and `@enlumine/html/themes/light` carry the same palettes as the terminal themes.
 
 ## Use one language
 

@@ -75,7 +75,10 @@ const sample = (frame, kind) => {
   const element = frame.contentDocument.querySelector(".enl-" + kind);
   return getComputedStyle(element).color;
 };
-const report = { source, errors: window.__errors, text: "" };
+const endings = "[1,\\r\\n2,\\r3]\\n";
+const holder = document.createElement("div");
+holder.innerHTML = highlight(endings, { tokenizer: json });
+const report = { source, errors: window.__errors, text: "", endings: { source: endings, text: holder.textContent } };
 let loaded = 0;
 
 for (const pane of panes) {

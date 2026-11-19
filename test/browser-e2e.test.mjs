@@ -37,6 +37,7 @@ test(
         literal: "rgb(133, 86, 0)",
       });
       assert.equal(report.text, report.source);
+      assert.equal(report.endings.text, report.endings.source);
     } finally {
       await rm(directory, { recursive: true, force: true });
     }
