@@ -49,3 +49,11 @@ test("shows markup in the source and in a class prefix as text, never as element
   assert.doesNotMatch(html, /<img|<script| onmouseover="/);
   assert.match(html, /&lt;img src=x onerror=alert\(1\)&gt;/);
 });
+
+test("hands the ref to the pre element so the caller can measure or scroll it", () => {
+  const ref = { current: null };
+  const element = Highlight.render({ source: "1", tokenizer: json }, ref);
+
+  assert.equal(element.type, "pre");
+  assert.equal(element.props.ref ?? element.ref, ref);
+});

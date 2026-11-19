@@ -241,6 +241,10 @@ snapshots:
 		"packages/react": {
 			"dependencies": {
 				"@enlumine/core": "workspace:*",
+				"@types/react": {
+					"specifier": "^18 || ^19",
+					"version": "19.3.0",
+				},
 				"react": {
 					"specifier": "^18 || ^19",
 					"version": "19.3.1",

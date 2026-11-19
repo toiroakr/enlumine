@@ -27,7 +27,7 @@ The workspace contains nine packages. Package names describe the distribution la
 | `@enlumine/graphql` | GraphQL tokenizer, fragment contexts, lexical scanning, line rendering | core |
 | `@enlumine/terminal` | ANSI rendering and separate theme modules | core |
 | `@enlumine/html` | HTML rendering and CSS-variable theme modules; usable in browsers with the JSON tokenizer | core |
-| `@enlumine/react` | A React component that renders tokens as elements without `dangerouslySetInnerHTML`; styled by the `@enlumine/html` themes | core |
+| `@enlumine/react` | A React component that renders tokens as elements without `dangerouslySetInnerHTML`; styled by the `@enlumine/html` themes | core, react (peer) |
 | `enlumine` | Convenience API and CLI with all four languages | core, terminal, language packages |
 
 Each package has its own manifest, exports, declarations, and tarball. The workspace root has `private: true` and is not an npm package.
