@@ -1,5 +1,17 @@
 # enlumine
 
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [53d7ac2]
+  - @enlumine/core@0.2.1
+  - @enlumine/graphql@0.2.1
+  - @enlumine/json@0.1.2
+  - @enlumine/sql@0.2.1
+  - @enlumine/terminal@0.2.1
+  - @enlumine/typescript@0.2.2
+
 ## 0.2.0
 
 ### Minor Changes
