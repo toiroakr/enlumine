@@ -35,8 +35,11 @@
     "@twinkleplop/sql": "0.1.7",
     "@twinkleplop/typescript": "0.1.7",
     "@types/node": "^22.0.0",
+    "@types/react": "19.3.0",
     "esbuild": "0.28.2",
     "graphql": "17.0.2",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
     "rolldown": "1.2.14",
     "terser": "5.51.2",
     "typescript": "^5.9.0"
