@@ -14,7 +14,7 @@ pnpm test
 pnpm smoke:packages
 ```
 
-The workspace contains seven packages. Package names describe the distribution layout; npm publication is a separate step. Builds emit JavaScript and declarations into each package's `dist/` directory. Generated build metadata and local measurements stay in `.generated/`.
+The workspace contains eight packages. Package names describe the distribution layout; npm publication is a separate step. Builds emit JavaScript and declarations into each package's `dist/` directory. Generated build metadata and local measurements stay in `.generated/`.
 
 ## Packages
 
@@ -26,6 +26,7 @@ The workspace contains seven packages. Package names describe the distribution l
 | `@enlumine/sql` | SQL tokenizer and line rendering | core |
 | `@enlumine/graphql` | GraphQL tokenizer, fragment contexts, lexical scanning, line rendering | core |
 | `@enlumine/terminal` | ANSI rendering and separate theme modules | core |
+| `@enlumine/html` | HTML rendering and CSS-variable theme modules; usable in browsers with the JSON tokenizer | core |
 | `enlumine` | Convenience API and CLI with all four languages | core, terminal, language packages |
 
 Each package has its own manifest, exports, declarations, and tarball. The workspace root has `private: true` and is not an npm package.
@@ -58,6 +59,23 @@ Custom themes map token kinds to six-digit hex colors. Unconfigured kinds use th
 Colored lines reset their foreground before LF, CRLF, lone CR, or the end of input. Unicode, tabs, and final newline status are preserved. Other terminal controls are rendered visibly; for example, ESC becomes `\x1b`.
 
 `tokenize` returns owned, contiguous `{ kind, start, end }` ranges with UTF-16 offsets. Adjacent equal kinds are merged, and gaps become `plain`. Boolean and null categories become `literal`; templates, regexes, and string escapes become `string`. Other classifications retain their language-specific names.
+
+## Highlight in the browser
+
+`@enlumine/core` has a `browser` export condition, so bundlers for the web resolve a build without `node:zlib`. Packed grammars are brotli-compressed and can only be loaded in Node.js, so the TypeScript, SQL, and GraphQL packages do not run in browsers yet. The JSON tokenizer does not use a packed grammar and works.
+
+```ts
+import json from "@enlumine/json";
+import { highlight } from "@enlumine/html";
+import dark from "@enlumine/html/themes/dark";
+
+document.head.append(Object.assign(document.createElement("style"), { textContent: dark }));
+const pre = Object.assign(document.createElement("pre"), { className: "enlumine" });
+pre.innerHTML = highlight('{"ok": true}', { tokenizer: json });
+document.body.append(pre);
+```
+
+`highlight` wraps every token except plain text in `<span class="enl-<kind>">` (underscores in the kind become hyphens, `classPrefix` replaces `enl-`) and escapes `& < > " '`. A theme is a CSS string that sets `--enl-<kind>` variables on `.enlumine` and colors the matching classes. `@enlumine/html/themes/dark` and `@enlumine/html/themes/light` carry the same palettes as the terminal themes.
 
 ## Use one language
 

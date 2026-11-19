@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
-const packages = ["core", "json", "typescript", "sql", "graphql", "terminal", "enlumine"];
+const packages = ["core", "json", "typescript", "sql", "graphql", "terminal", "html", "enlumine"];
 const destination = resolve(root, ".generated/tarballs");
 await mkdir(destination, { recursive: true });
 function run(command, args, cwd, input) {

@@ -11,6 +11,12 @@
     "skipLibCheck": true,
     "verbatimModuleSyntax": true,
     "paths": {
+      "@enlumine/html/themes/*": [
+        "./packages/html/src/themes/*.ts"
+      ],
+      "@enlumine/html": [
+        "./packages/html/src/index.ts"
+      ],
       "@enlumine/terminal/themes/*": [
         "./packages/terminal/src/themes/*.ts"
       ],

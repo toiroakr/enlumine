@@ -222,6 +222,12 @@ snapshots:
 			},
 		},
 
+		"packages/html": {
+			"dependencies": {
+				"@enlumine/core": "workspace:*",
+			},
+		},
+
 		"packages/json": {
 			"name": "@enlumine/json",
 			"dependencies": {

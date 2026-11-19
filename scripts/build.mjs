@@ -468,7 +468,7 @@ const plugin = {
   },
 };
 
-const packages = ["core", ...languages, "terminal", "enlumine"];
+const packages = ["core", ...languages, "terminal", "html", "enlumine"];
 for (const name of packages)
   await rm(resolve(outputRoot, "packages", name, "dist"), { recursive: true, force: true });
 await rm(resolve(generated, "types"), { recursive: true, force: true });
@@ -482,6 +482,9 @@ for (const name of packages) {
   const entries = name==="sql"?{shared:"enlumine:sql-package","postgresql/index":"packages/sql/src/postgresql/index.ts"}:{index:`packages/${name}/src/index.ts`};
   if (name === "terminal") for (const theme of ["dark", "light", "ansi"])
     entries[`themes/${theme}`] = `packages/terminal/src/themes/${theme}.ts`;
+  if (name === "html") for (const theme of ["dark", "light"])
+    entries[`themes/${theme}`] = `packages/html/src/themes/${theme}.ts`;
+  if (name === "core") entries.browser = "packages/core/src/browser.ts";
   if (name === "enlumine") entries.cli = `packages/${name}/src/cli.ts`;
   if (name === "graphql") entries.lexical = "packages/graphql/src/lexical.ts";
   const result = await build({
@@ -535,7 +538,8 @@ for (const name of packages) {
   const declarations = name === "core" ? ["index", "core", "unpack", "tokens"]
     : name === "enlumine" ? ["index", "lexer", "languages"] : name === "graphql" ? ["index", "lexical", "scan-lexically", "tokenize-lines"]
     : name === "sql" ? ["index", "lexical", "lexer", "lines", "postgresql/index", "postgresql/lexical", "postgresql/lines"]
-    : name === "terminal" ? ["index", "types", "themes/dark", "themes/light", "themes/ansi"] : ["index"];
+    : name === "terminal" ? ["index", "types", "themes/dark", "themes/light", "themes/ansi"]
+    : name === "html" ? ["index", "themes/dark", "themes/light"] : ["index"];
   for (const entry of declarations)
     await copyFile(resolve(generated, "types", name, "src", `${entry}.d.ts`),
       resolve(outputRoot, "packages", name, "dist", `${entry}.d.ts`));
