@@ -25,7 +25,9 @@ export function highlight(source: string, options: HighlightOptions): string {
   for (const { kind, start, end } of tokenize(source, options.tokenizer)) {
     const text = escapeHtml(source.slice(start, end));
     output +=
-      kind === "plain" ? text : `<span class="${prefix}${kind.replaceAll("_", "-")}">${text}</span>`;
+      kind === "plain"
+        ? text
+        : `<span class="${escapeHtml(prefix + kind.replaceAll("_", "-"))}">${text}</span>`;
   }
   return output;
 }

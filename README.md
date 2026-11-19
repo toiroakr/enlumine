@@ -75,7 +75,7 @@ pre.innerHTML = highlight('{"ok": true}', { tokenizer: json });
 document.body.append(pre);
 ```
 
-`highlight` wraps every token except plain text in `<span class="enl-<kind>">` (underscores in the kind become hyphens, `classPrefix` replaces `enl-`) and escapes `& < > " '`. A theme is a CSS string that sets `--enl-<kind>` variables on `.enlumine` and colors the matching classes. `@enlumine/html/themes/dark` and `@enlumine/html/themes/light` carry the same palettes as the terminal themes.
+`highlight` wraps every token except plain text in `<span class="enl-<kind>">` (underscores in the kind become hyphens, `classPrefix` replaces `enl-`; the bundled themes style only `enl-`) and escapes `& < > " '` in the text and in the class value. A theme is a CSS string that sets `--enl-<kind>` variables on `.enlumine` and colors the matching classes. `@enlumine/html/themes/dark` and `@enlumine/html/themes/light` carry the same palettes as the terminal themes.
 
 ## Use one language
 

@@ -50,3 +50,10 @@ test("the browser build of core fails with a clear message only when a packed gr
     (bundled) => assert.throws(() => bundled.load(), /Node\.js/),
   );
 });
+
+test("the browser build of core exports the same names as the Node build", async () => {
+  const node = await import("../packages/core/dist/index.js");
+  const browser = await import("../packages/core/dist/browser.js");
+
+  assert.deepEqual(Object.keys(browser).sort(), Object.keys(node).sort());
+});

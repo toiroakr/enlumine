@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { build } from "esbuild";
 import json from "../packages/json/dist/index.js";
+import typescript from "../packages/typescript/dist/index.js";
 import { highlight } from "../packages/html/dist/index.js";
 import dark from "../packages/html/dist/themes/dark.js";
 import light from "../packages/html/dist/themes/light.js";
@@ -45,6 +46,26 @@ test("uses the class prefix when one is given", () => {
     highlight("1", { tokenizer: json, classPrefix: "tok-" }),
     '<span class="tok-number">1</span>',
   );
+});
+
+test("escapes the class prefix and the token kind so output stays safe in innerHTML", () => {
+  const malicious = () => ({ tokens: new Uint32Array([0, 0, 1]), token_types: ['a" onclick="x'] });
+
+  for (const output of [
+    highlight("1", { tokenizer: json, classPrefix: 'x" onmouseover="alert(1)' }),
+    highlight("1", { tokenizer: malicious }),
+  ]) {
+    assert.doesNotMatch(output, /" on\w+="/);
+    assert.equal((output.match(/"/g) ?? []).length, 2);
+  }
+});
+
+test("highlight and the themes use the same class name for a kind with an underscore", () => {
+  const output = highlight("class A {}", { tokenizer: typescript });
+
+  assert.match(output, /<span class="enl-class-name">A<\/span>/);
+  for (const theme of [dark, light])
+    assert.ok(theme.includes(".enlumine .enl-class-name{color:var(--enl-class-name)}"));
 });
 
 test("themes set a color variable for the kinds and apply it to the matching class", () => {
