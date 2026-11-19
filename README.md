@@ -62,7 +62,7 @@ Colored lines reset their foreground before LF, CRLF, lone CR, or the end of inp
 
 ## Highlight in the browser
 
-`@enlumine/core` has a `browser` export condition, so bundlers for the web resolve a build without `node:zlib`. Packed grammars are brotli-compressed and can only be loaded in Node.js, so `@enlumine/typescript` and the `@enlumine/graphql` document entry do not run in browsers yet. The JSON and SQL tokenizers (including `@enlumine/sql/postgresql`) and the `@enlumine/graphql/lexical` entry do not use a packed grammar and work (the lexical entry does not export a `Tokenizer` that `@enlumine/html` accepts directly; see the `@enlumine/html` README).
+`@enlumine/core` has a `browser` export condition, so bundlers for the web resolve a build without `node:zlib`. Packed grammars are brotli-compressed and can only be loaded in Node.js, so `@enlumine/typescript` and the `@enlumine/graphql` document entry do not run in browsers yet. The JSON and SQL tokenizers (including `@enlumine/sql/postgresql`) and the `@enlumine/graphql/lexical` entry do not use a packed grammar and work (neither lexical export is a `Tokenizer` that `@enlumine/html` accepts directly; see the `@enlumine/html` README).
 
 ```ts
 import json from "@enlumine/json";
